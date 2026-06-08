@@ -19,6 +19,7 @@ class BleepCard extends StatelessWidget {
     this.borderWidth = 0.5,
     this.borderColor,
     this.currentUserId,
+    this.isFollowing = false,
   });
 
   final Bleep bleep;
@@ -32,6 +33,7 @@ class BleepCard extends StatelessWidget {
   final double borderWidth;
   final Color? borderColor;
   final String? currentUserId;
+  final bool isFollowing;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +62,7 @@ class BleepCard extends StatelessWidget {
               onOpenProfile: onOpenProfile,
               onMore: onMore,
               currentUserId: currentUserId,
+              isFollowing: isFollowing,
             ),
             SizedBox(height: context.spacingSm),
             BleepCardContent(bleep: bleep),

@@ -113,4 +113,46 @@ class BleepRepository {
       throw AppError('Failed to create bleep: $e');
     }
   }
+
+  Future<bool> toggleFollow(String followerId, String followingId) async {
+    try {
+      final existing = await _supabase
+          .from('follows')
+          .select()
+          .eq('follower_id', followerId)
+          .eq('following_id', followingId)
+          .maybeSingle();
+
+      if (existing != null) {
+        await _supabase
+            .from('follows')
+            .delete()
+            .eq('follower_id', followerId)
+            .eq('following_id', followingId);
+        return false;
+      } else {
+        await _supabase.from('follows').insert({
+          'follower_id': followerId,
+          'following_id': followingId,
+        });
+        return true;
+      }
+    } catch (e) {
+      throw AppError('Failed to toggle follow: $e');
+    }
+  }
+
+  Future<bool> isFollowing(String followerId, String followingId) async {
+    try {
+      final existing = await _supabase
+          .from('follows')
+          .select()
+          .eq('follower_id', followerId)
+          .eq('following_id', followingId)
+          .maybeSingle();
+      return existing != null;
+    } catch (e) {
+      return false;
+    }
+  }
 }

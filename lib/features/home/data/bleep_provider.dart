@@ -153,4 +153,12 @@ class BleepProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<bool> toggleFollow(String followerId, String followingId) async {
+    try {
+      return await _repository.toggleFollow(followerId, followingId);
+    } catch (e) {
+      return false;
+    }
+  }
 }

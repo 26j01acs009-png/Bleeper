@@ -12,12 +12,14 @@ class BleepCardHeader extends StatelessWidget {
     required this.onOpenProfile,
     this.onMore,
     this.currentUserId,
+    this.isFollowing = false,
   });
 
   final Bleep bleep;
   final VoidCallback onOpenProfile;
   final VoidCallback? onMore;
   final String? currentUserId;
+  final bool isFollowing;
 
   bool get isOwnPost => currentUserId != null && bleep.userId == currentUserId;
 
@@ -39,35 +41,37 @@ class BleepCardHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (isOwnPost) ...[
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: const Text('Edit'),
+              _SheetTile(
+                icon: Icons.edit_outlined,
+                label: 'Edit',
                 onTap: () => Navigator.pop(ctx),
               ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline),
-                title: const Text('Delete'),
+              _SheetTile(
+                icon: Icons.delete_outline,
+                label: 'Delete',
                 onTap: () => Navigator.pop(ctx),
               ),
             ] else ...[
-              ListTile(
-                leading: const Icon(Icons.person_add_outlined),
-                title: const Text('Follow'),
+              _SheetTile(
+                icon: isFollowing
+                    ? Icons.person_2_outlined
+                    : Icons.person_add_outlined,
+                label: isFollowing ? 'Unfollow' : 'Follow',
                 onTap: () => Navigator.pop(ctx),
               ),
-              ListTile(
-                leading: const Icon(Icons.volume_off_outlined),
-                title: const Text('Mute'),
+              _SheetTile(
+                icon: Icons.volume_off_outlined,
+                label: 'Mute',
                 onTap: () => Navigator.pop(ctx),
               ),
-              ListTile(
-                leading: const Icon(Icons.block_outlined),
-                title: const Text('Block'),
+              _SheetTile(
+                icon: Icons.block_outlined,
+                label: 'Block',
                 onTap: () => Navigator.pop(ctx),
               ),
-              ListTile(
-                leading: const Icon(Icons.flag_outlined),
-                title: const Text('Report'),
+              _SheetTile(
+                icon: Icons.flag_outlined,
+                label: 'Report',
                 onTap: () => Navigator.pop(ctx),
               ),
             ],
@@ -145,6 +149,35 @@ class BleepCardHeader extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SheetTile extends StatelessWidget {
+  const _SheetTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: context.textPrimary),
+            const SizedBox(width: 12),
+            Text(label, style: context.bodyMedium),
+          ],
+        ),
+      ),
     );
   }
 }

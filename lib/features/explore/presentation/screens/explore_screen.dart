@@ -107,7 +107,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       padding: EdgeInsets.symmetric(horizontal: context.screenPadding),
                       itemCount: exploreProvider.suggestedUsers.length,
                       itemBuilder: (context, index) {
-                        return CreatorCard(data: exploreProvider.suggestedUsers[index]);
+                        final user = exploreProvider.suggestedUsers[index];
+                        final userId = user['id']?.toString() ?? '';
+                        return CreatorCard(
+                          data: user,
+                          isFollowing: exploreProvider.isFollowing(userId),
+                          onFollowTap: () {
+                            final currentUserId = context.read<AuthProvider>().user?.id;
+                            if (currentUserId != null && userId.isNotEmpty) {
+                              context.read<ExploreProvider>().toggleFollow(currentUserId, userId);
+                            }
+                          },
+                        );
                       },
                     ),
                   ),

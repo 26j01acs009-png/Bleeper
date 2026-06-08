@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../core/supabase/auth_provider.dart';
 import '../../../../features/bleep_details/data/bleep_detail_provider.dart';
+import '../../../../features/home/data/bleep_repository.dart';
+import '../../../../features/home/data/bleep_provider.dart';
 import '../widgets/bleep_content.dart';
 import '../widgets/bleep_actions.dart';
 import '../widgets/discussions_section.dart';
@@ -23,15 +25,31 @@ class BleepDetailScreen extends StatefulWidget {
 class _BleepDetailScreenState extends State<BleepDetailScreen> {
   final _discussionController = TextEditingController();
   final _discussionFocusNode = FocusNode();
+  bool _isFollowingAuthor = false;
+  bool _followStatusLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<BleepDetailProvider>().loadBleepDetail(widget.bleepId);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<BleepDetailProvider>().loadBleepDetail(widget.bleepId);
     });
+  }
+
+  Future<void> _checkFollowStatus(String authorId) async {
+    final currentUserId = context.read<AuthProvider>().user?.id;
+    if (currentUserId == null) return;
+    final isFollowing = await context.read<BleepRepository>().isFollowing(
+      currentUserId,
+      authorId,
+    );
+    if (mounted) {
+      setState(() {
+        _isFollowingAuthor = isFollowing;
+        _followStatusLoaded = true;
+      });
+    }
   }
 
   @override
@@ -90,63 +108,85 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
             final authorName = bleep.displayName ?? bleep.username;
             final authorUsername = bleep.username;
 
+            if (!_followStatusLoaded) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _checkFollowStatus(bleep.userId);
+              });
+            }
+
             return SafeArea(
               child: Column(
                 children: [
                   Padding(
-                     padding: EdgeInsets.symmetric(
-                       horizontal: context.screenPadding,
-                       vertical: context.spacingSm,
-                     ),
-                     child: Row(
-                       children: [
-                         GestureDetector(
-                           onTap: () => context.pop(),
-                           child: HugeIcon(
-                             icon: HugeIconsStrokeRounded.arrowLeft01,
-                             size: 28,
-                             color: context.textPrimary,
-                           ),
-                         ),
-                         const SizedBox(width: 4),
-                         Text('Bleep', style: context.h2),
-                         const Spacer(),
-                         if (bleep.userId != context.read<AuthProvider>().user?.id) ...[
-                           _DetailActionIcon(
-                             icon: Icons.person_add_outlined,
-                             onTap: () {},
-                             tooltip: 'Follow',
-                           ),
-                           _DetailActionIcon(
-                             icon: Icons.volume_off_outlined,
-                             onTap: () {},
-                             tooltip: 'Mute',
-                           ),
-                           _DetailActionIcon(
-                             icon: Icons.block_outlined,
-                             onTap: () {},
-                             tooltip: 'Block',
-                           ),
-                           _DetailActionIcon(
-                             icon: Icons.flag_outlined,
-                             onTap: () {},
-                             tooltip: 'Report',
-                           ),
-                         ] else ...[
-                           _DetailActionIcon(
-                             icon: Icons.edit_outlined,
-                             onTap: () {},
-                             tooltip: 'Edit',
-                           ),
-                           _DetailActionIcon(
-                             icon: Icons.delete_outline,
-                             onTap: () {},
-                             tooltip: 'Delete',
-                           ),
-                         ],
-                       ],
-                     ),
-                   ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.screenPadding,
+                      vertical: context.spacingSm,
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: HugeIcon(
+                            icon: HugeIconsStrokeRounded.arrowLeft01,
+                            size: 28,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text('Bleep', style: context.h2),
+                        const Spacer(),
+                        if (bleep.userId !=
+                            context.read<AuthProvider>().user?.id) ...[
+                          _DetailActionIcon(
+                            icon: _isFollowingAuthor
+                                ? Icons.person_2
+                                : Icons.person_add_outlined,
+                            onTap: () async {
+                              final currentUserId = context
+                                  .read<AuthProvider>()
+                                  .user
+                                  ?.id;
+                              if (currentUserId != null) {
+                                final newState = await context
+                                    .read<BleepProvider>()
+                                    .toggleFollow(currentUserId, bleep.userId);
+                                if (mounted) {
+                                  setState(() => _isFollowingAuthor = newState);
+                                }
+                              }
+                            },
+                            tooltip: _isFollowingAuthor ? 'Unfollow' : 'Follow',
+                          ),
+                          _DetailActionIcon(
+                            icon: Icons.volume_off_outlined,
+                            onTap: () {},
+                            tooltip: 'Mute',
+                          ),
+                          _DetailActionIcon(
+                            icon: Icons.block_outlined,
+                            onTap: () {},
+                            tooltip: 'Block',
+                          ),
+                          _DetailActionIcon(
+                            icon: Icons.flag_outlined,
+                            onTap: () {},
+                            tooltip: 'Report',
+                          ),
+                        ] else ...[
+                          _DetailActionIcon(
+                            icon: Icons.edit_outlined,
+                            onTap: () {},
+                            tooltip: 'Edit',
+                          ),
+                          _DetailActionIcon(
+                            icon: Icons.delete_outline,
+                            onTap: () {},
+                            tooltip: 'Delete',
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.symmetric(
@@ -154,54 +194,55 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                       ),
                       children: [
                         SizedBox(height: context.spacingMd),
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () => context
-                                    .push('/identity/${bleep.userId}'),
-                                child: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: context.accent.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                  backgroundImage: bleep.avatarUrl != null
-                                      ? NetworkImage(bleep.avatarUrl!)
-                                      : null,
-                                  child: bleep.avatarUrl == null
-                                      ? const DefaultAvatar(size: 40)
-                                      : null,
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () =>
+                                  context.push('/identity/${bleep.userId}'),
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: context.accent.withValues(
+                                  alpha: 0.12,
                                 ),
+                                backgroundImage: bleep.avatarUrl != null
+                                    ? NetworkImage(bleep.avatarUrl!)
+                                    : null,
+                                child: bleep.avatarUrl == null
+                                    ? const DefaultAvatar(size: 40)
+                                    : null,
                               ),
-                              SizedBox(width: context.spacingSm),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => context
-                                          .push('/identity/${bleep.userId}'),
-                                      child: Text(
-                                        authorName,
-                                        style: context.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                            ),
+                            SizedBox(width: context.spacingSm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => context.push(
+                                      '/identity/${bleep.userId}',
                                     ),
-                                    Text(
-                                      '@$authorUsername',
-                                      style: context.caption.copyWith(
-                                        color: context.textTertiary,
+                                    child: Text(
+                                      authorName,
+                                      style: context.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w600,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  Text(
+                                    '@$authorUsername',
+                                    style: context.caption.copyWith(
+                                      color: context.textTertiary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
                         SizedBox(height: context.spacingMd),
                         BleepContent(
                           content: bleep.content,

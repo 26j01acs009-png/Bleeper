@@ -4,9 +4,16 @@ import '../../../../shared/widgets.dart';
 import '../../../../core/theme/app_theme_data.dart';
 
 class CreatorCard extends StatelessWidget {
-  const CreatorCard({required this.data, super.key});
+  const CreatorCard({
+    required this.data,
+    this.isFollowing = false,
+    this.onFollowTap,
+    super.key,
+  });
 
   final Map<String, dynamic> data;
+  final bool isFollowing;
+  final VoidCallback? onFollowTap;
 
   @override
   Widget build(BuildContext context) {
@@ -62,31 +69,31 @@ class CreatorCard extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: context.spacingXs),
-              Center(
-                child: TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.spacingLg,
-                      vertical: context.spacingSm,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: context.accent,
-                    side: const BorderSide(color: Colors.transparent),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(context.radiusSm),
-                    ),
-                  ),
-                  child: Text(
-                    'Follow',
-                    style: context.bodySmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+               Center(
+                 child: TextButton(
+                   onPressed: onFollowTap ?? () {},
+                   style: TextButton.styleFrom(
+                     padding: EdgeInsets.symmetric(
+                       horizontal: context.spacingLg,
+                       vertical: context.spacingSm,
+                     ),
+                     minimumSize: Size.zero,
+                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                     backgroundColor: isFollowing ? context.divider : context.accent,
+                     side: const BorderSide(color: Colors.transparent),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(context.radiusSm),
+                     ),
+                   ),
+                   child: Text(
+                     isFollowing ? 'Following' : 'Follow',
+                     style: context.bodySmall.copyWith(
+                       color: isFollowing ? context.textSecondary : Colors.white,
+                       fontWeight: FontWeight.w600,
+                     ),
+                   ),
+                 ),
+               ),
             ],
           ),
         ),

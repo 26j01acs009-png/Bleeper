@@ -43,11 +43,17 @@ Future<void> main() async {
         Provider(create: (_) => ExploreRepository(Supabase.instance.client)),
         ChangeNotifierProxyProvider<AuthProvider, ExploreProvider>(
           create: (context) =>
-              ExploreProvider(context.read<ExploreRepository>()),
+              ExploreProvider(
+                context.read<ExploreRepository>(),
+                context.read<BleepRepository>(),
+              ),
           update: (context, authProvider, ExploreProvider? exploreProvider) {
             final provider =
                 exploreProvider ??
-                ExploreProvider(context.read<ExploreRepository>());
+                ExploreProvider(
+                  context.read<ExploreRepository>(),
+                  context.read<BleepRepository>(),
+                );
             if (authProvider.status == AuthStatus.authenticated &&
                 authProvider.user != null) {
               if (!provider.hasLoadedOnce && !provider.isLoading) {

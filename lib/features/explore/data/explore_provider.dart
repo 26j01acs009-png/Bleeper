@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:bleeper/features/explore/data/explore_repository.dart';
 import 'package:bleeper/features/home/domain/entities/bleep.dart';
+import 'package:bleeper/features/home/data/bleep_repository.dart';
 
 class ExploreProvider extends ChangeNotifier {
   final ExploreRepository _repository;
+  final BleepRepository _bleepRepository;
 
-  ExploreProvider(this._repository);
+  ExploreProvider(this._repository, this._bleepRepository);
 
   List<Map<String, dynamic>> _trendingKeywords = [];
   List<Map<String, dynamic>> get trendingKeywords => _trendingKeywords;
@@ -18,6 +20,9 @@ class ExploreProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> _suggestedUsers = [];
   List<Map<String, dynamic>> get suggestedUsers => _suggestedUsers;
+
+  final Set<String> _followedUserIds = {};
+  bool isFollowing(String userId) => _followedUserIds.contains(userId);
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -60,5 +65,17 @@ class ExploreProvider extends ChangeNotifier {
 
   Future<void> refresh(String userId) async {
     await loadExploreData(userId);
+  }
+
+  Future<void> toggleFollow(String followerId, String followingId) async {
+    final success = await _bleepRepository.toggleFollow(followerId, followingId);
+    if (success) {
+      if (_followedUserIds.contains(followingId)) {
+        _followedUserIds.remove(followingId);
+      } else {
+        _followedUserIds.add(followingId);
+      }
+      notifyListeners();
+    }
   }
 }
