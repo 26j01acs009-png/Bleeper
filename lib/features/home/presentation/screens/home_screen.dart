@@ -233,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               showBottomBorder: !isLast,
               borderWidth: 0.3,
               borderColor: context.divider,
+              currentUserId: context.read<AuthProvider>().user?.id,
               onAppreciate: () {
                 final userId = context.read<AuthProvider>().user?.id;
                 if (userId != null) {

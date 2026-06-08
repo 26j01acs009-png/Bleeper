@@ -11,11 +11,15 @@ class BleepCardHeader extends StatelessWidget {
     required this.bleep,
     required this.onOpenProfile,
     this.onMore,
+    this.currentUserId,
   });
 
   final Bleep bleep;
   final VoidCallback onOpenProfile;
   final VoidCallback? onMore;
+  final String? currentUserId;
+
+  bool get isOwnPost => currentUserId != null && bleep.userId == currentUserId;
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -34,24 +38,39 @@ class BleepCardHeader extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('View profile'),
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenProfile();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block_outlined),
-              title: const Text('Block'),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: const Text('Report'),
-              onTap: () => Navigator.pop(ctx),
-            ),
+            if (isOwnPost) ...[
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Delete'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            ] else ...[
+              ListTile(
+                leading: const Icon(Icons.person_add_outlined),
+                title: const Text('Follow'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              ListTile(
+                leading: const Icon(Icons.volume_off_outlined),
+                title: const Text('Mute'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              ListTile(
+                leading: const Icon(Icons.block_outlined),
+                title: const Text('Block'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+              ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Report'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            ],
           ],
         ),
       ),

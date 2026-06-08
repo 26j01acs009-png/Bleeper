@@ -18,6 +18,7 @@ class BleepCard extends StatelessWidget {
     this.showBottomBorder = true,
     this.borderWidth = 0.5,
     this.borderColor,
+    this.currentUserId,
   });
 
   final Bleep bleep;
@@ -30,6 +31,7 @@ class BleepCard extends StatelessWidget {
   final bool showBottomBorder;
   final double borderWidth;
   final Color? borderColor;
+  final String? currentUserId;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,7 @@ class BleepCard extends StatelessWidget {
               bleep: bleep,
               onOpenProfile: onOpenProfile,
               onMore: onMore,
+              currentUserId: currentUserId,
             ),
             SizedBox(height: context.spacingSm),
             BleepCardContent(bleep: bleep),

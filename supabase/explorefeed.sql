@@ -141,8 +141,7 @@ returns table (
   banner_url text,
   owner_id uuid,
   is_public boolean,
-  member_count bigint,
-  category text
+  member_count bigint
 )
 language sql
 security definer
@@ -156,8 +155,7 @@ as $$
     c.banner_url,
     c.owner_id,
     c.is_public,
-    count(cm.user_id) as member_count,
-    c.category
+    count(cm.user_id) as member_count
   from public.circles c
   left join public.circle_members cm on cm.circle_id = c.id
   where c.is_public = true
@@ -186,8 +184,7 @@ returns table (
   avatar_url text,
   bio text,
   followers_count bigint,
-  bleeps_count bigint,
-  is_verified boolean
+  bleeps_count bigint
 )
 language sql
 security definer
@@ -214,10 +211,8 @@ as $$
     us.avatar_url,
     us.bio,
     us.followers_count,
-    us.bleeps_count,
-    coalesce(p.is_verified, false) as is_verified
+    us.bleeps_count
   from user_stats us
-  left join public.profiles p on p.id = us.id
   where us.id != p_user_id
     and not exists (
       select 1 from public.follows f
@@ -228,6 +223,4 @@ as $$
 $$;
 
 -- Indexes for explore performance
-create index if not exists idx_circles_category on public.circles (category);
 create index if not exists idx_circles_public_owner on public.circles (is_public, owner_id);
-create index if not exists idx_profiles_is_verified on public.profiles (is_verified);

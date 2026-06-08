@@ -89,33 +89,64 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
             final bleep = provider.bleepDetail!;
             final authorName = bleep.displayName ?? bleep.username;
             final authorUsername = bleep.username;
-            final authorAvatarUrl = bleep.avatarUrl;
 
             return SafeArea(
               child: Column(
                 children: [
                   Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.screenPadding,
-                      vertical: context.spacingSm,
-                    ),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => context.pop(),
-                          child: HugeIcon(
-                            icon: HugeIconsStrokeRounded.arrowLeft01,
-                            size: 28,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text('Bleep', style: context.h2),
-                        const Spacer(),
-                        SizedBox(width: 24),
-                      ],
-                    ),
-                  ),
+                     padding: EdgeInsets.symmetric(
+                       horizontal: context.screenPadding,
+                       vertical: context.spacingSm,
+                     ),
+                     child: Row(
+                       children: [
+                         GestureDetector(
+                           onTap: () => context.pop(),
+                           child: HugeIcon(
+                             icon: HugeIconsStrokeRounded.arrowLeft01,
+                             size: 28,
+                             color: context.textPrimary,
+                           ),
+                         ),
+                         const SizedBox(width: 4),
+                         Text('Bleep', style: context.h2),
+                         const Spacer(),
+                         if (bleep.userId != context.read<AuthProvider>().user?.id) ...[
+                           _DetailActionIcon(
+                             icon: Icons.person_add_outlined,
+                             onTap: () {},
+                             tooltip: 'Follow',
+                           ),
+                           _DetailActionIcon(
+                             icon: Icons.volume_off_outlined,
+                             onTap: () {},
+                             tooltip: 'Mute',
+                           ),
+                           _DetailActionIcon(
+                             icon: Icons.block_outlined,
+                             onTap: () {},
+                             tooltip: 'Block',
+                           ),
+                           _DetailActionIcon(
+                             icon: Icons.flag_outlined,
+                             onTap: () {},
+                             tooltip: 'Report',
+                           ),
+                         ] else ...[
+                           _DetailActionIcon(
+                             icon: Icons.edit_outlined,
+                             onTap: () {},
+                             tooltip: 'Edit',
+                           ),
+                           _DetailActionIcon(
+                             icon: Icons.delete_outline,
+                             onTap: () {},
+                             tooltip: 'Delete',
+                           ),
+                         ],
+                       ],
+                     ),
+                   ),
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.symmetric(
@@ -123,54 +154,54 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                       ),
                       children: [
                         SizedBox(height: context.spacingMd),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () =>
-                                  context.push('/identity/${bleep.userId}'),
-                              child: CircleAvatar(
-                                radius: 20,
-                                backgroundColor: context.accent.withValues(
-                                  alpha: 0.12,
+                          Row(
+                            children: [
+                              GestureDetector(
+                                onTap: () => context
+                                    .push('/identity/${bleep.userId}'),
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: context.accent.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  backgroundImage: bleep.avatarUrl != null
+                                      ? NetworkImage(bleep.avatarUrl!)
+                                      : null,
+                                  child: bleep.avatarUrl == null
+                                      ? const DefaultAvatar(size: 40)
+                                      : null,
                                 ),
-                                backgroundImage: authorAvatarUrl != null
-                                    ? NetworkImage(authorAvatarUrl)
-                                    : null,
-                                child: authorAvatarUrl == null
-                                    ? const DefaultAvatar(size: 40)
-                                    : null,
                               ),
-                            ),
-                            SizedBox(width: context.spacingSm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => context
-                                        .push('/identity/${bleep.userId}'),
-                                    child: Text(
-                                      authorName,
-                                      style: context.bodyMedium.copyWith(
-                                        fontWeight: FontWeight.w600,
+                              SizedBox(width: context.spacingSm),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => context
+                                          .push('/identity/${bleep.userId}'),
+                                      child: Text(
+                                        authorName,
+                                        style: context.bodyMedium.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Text(
+                                      '@$authorUsername',
+                                      style: context.caption.copyWith(
+                                        color: context.textTertiary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  Text(
-                                    '@$authorUsername',
-                                    style: context.caption.copyWith(
-                                      color: context.textTertiary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                         SizedBox(height: context.spacingMd),
                         BleepContent(
                           content: bleep.content,
@@ -223,6 +254,32 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailActionIcon extends StatelessWidget {
+  const _DetailActionIcon({
+    required this.icon,
+    required this.onTap,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Icon(icon, size: 18, color: context.textSecondary),
         ),
       ),
     );
