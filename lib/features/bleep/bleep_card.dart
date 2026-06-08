@@ -15,6 +15,9 @@ class BleepCard extends StatelessWidget {
     required this.onOpenProfile,
     this.onMore,
     this.onTap,
+    this.showBottomBorder = true,
+    this.borderWidth = 0.5,
+    this.borderColor,
   });
 
   final Bleep bleep;
@@ -24,6 +27,9 @@ class BleepCard extends StatelessWidget {
   final VoidCallback onOpenProfile;
   final VoidCallback? onMore;
   final VoidCallback? onTap;
+  final bool showBottomBorder;
+  final double borderWidth;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +41,14 @@ class BleepCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.bg,
           borderRadius: BorderRadius.circular(context.radiusSm),
+          border: showBottomBorder
+              ? Border(
+                  bottom: BorderSide(
+                    color: borderColor ?? context.divider,
+                    width: borderWidth,
+                  ),
+                )
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
