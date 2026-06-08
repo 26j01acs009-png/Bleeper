@@ -1,31 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../shared/widgets.dart';
+import '../../domain/models/chat_model.dart';
 
 class ChatCard extends StatelessWidget {
   const ChatCard({
     super.key,
-    required this.name,
-    required this.preview,
-    required this.timeAgo,
+    required this.chat,
     required this.onTap,
-    this.avatarUrl,
-    this.isOnline = false,
-    this.unreadCount,
-    this.isRead = true,
   });
 
-  final String name;
-  final String preview;
-  final String timeAgo;
+  final Chat chat;
   final VoidCallback onTap;
-  final String? avatarUrl;
-  final bool isOnline;
-  final int? unreadCount;
-  final bool isRead;
 
   @override
   Widget build(BuildContext context) {
+    final c = chat;
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -35,14 +26,14 @@ class ChatCard extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                avatarUrl != null
+                c.avatarUrl != null
                     ? CircleAvatar(
                         radius: 24,
                         backgroundColor: context.accent.withValues(alpha: 0.15),
-                        backgroundImage: NetworkImage(avatarUrl!),
+                        backgroundImage: NetworkImage(c.avatarUrl!),
                       )
                     : const DefaultAvatar(size: 48),
-                if (isOnline)
+                if (c.isOnline)
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -67,16 +58,20 @@ class ChatCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          name,
+                          c.name,
                           style: context.bodyMedium.copyWith(
-                            fontWeight: unreadCount != null ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: c.unreadCount != null
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                         ),
                       ),
                       Text(
-                        timeAgo,
+                        c.timeAgo,
                         style: context.caption.copyWith(
-                          color: unreadCount != null ? context.accent : context.textTertiary,
+                          color: c.unreadCount != null
+                              ? context.accent
+                              : context.textTertiary,
                         ),
                       ),
                     ],
@@ -84,7 +79,7 @@ class ChatCard extends StatelessWidget {
                   SizedBox(height: 2),
                   Row(
                     children: [
-                      if (!isRead && preview.isNotEmpty) ...[
+                      if (!c.isRead && c.preview.isNotEmpty) ...[
                         Icon(
                           Icons.done_all,
                           size: 14,
@@ -94,15 +89,17 @@ class ChatCard extends StatelessWidget {
                       ],
                       Expanded(
                         child: Text(
-                          preview,
+                          c.preview,
                           style: context.bodySmall.copyWith(
-                            color: unreadCount != null ? context.textPrimary : context.textSecondary,
+                            color: c.unreadCount != null
+                                ? context.textPrimary
+                                : context.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (unreadCount != null && unreadCount! > 0)
+                      if (c.unreadCount != null && c.unreadCount! > 0)
                         Container(
                           margin: EdgeInsets.only(left: 8),
                           padding: const EdgeInsets.symmetric(
@@ -114,7 +111,7 @@ class ChatCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            '$unreadCount',
+                            '${c.unreadCount}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,

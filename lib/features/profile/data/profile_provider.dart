@@ -75,4 +75,20 @@ class ProfileProvider extends ChangeNotifier {
     if ((p.gender ?? '').trim().isEmpty) return '/setup/gender-dob';
     return null;
   }
+
+  Future<bool> toggleFollow(String followerId, String followingId) async {
+    try {
+      return await _repository.toggleFollow(followerId, followingId);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> isFollowing(String followerId, String followingId) async {
+    try {
+      return await _repository.isFollowing(followerId, followingId);
+    } catch (e) {
+      return false;
+    }
+  }
 }

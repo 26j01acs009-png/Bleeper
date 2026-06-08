@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/chats/presentation/screens/chats_screen.dart';
 import '../../features/chats/presentation/screens/chat_screen.dart';
+import '../../features/chats/presentation/screens/new_message_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/create/presentation/screens/create_bleep_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -133,6 +134,11 @@ List<RouteBase> appRoutes = [
       final chatId = state.pathParameters['chatId']!;
       return ChatScreen(chatId: chatId);
     },
+  ),
+  GoRoute(
+    path: '/new-message',
+    name: 'newMessage',
+    builder: (context, state) => const NewMessageScreen(),
   ),
   GoRoute(
     path: '/identity/:userId',

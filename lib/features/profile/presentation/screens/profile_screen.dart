@@ -23,11 +23,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<ProfileProvider>().loadProfile(widget.userId);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<ProfileProvider>().loadProfile(widget.userId);
+      if (mounted) await _checkFollowStatus();
     });
+  }
+
+  Future<void> _checkFollowStatus() async {
+    final currentUserId = context.read<AuthProvider>().user?.id;
+    if (currentUserId == null) return;
+    final isFollowing = await context.read<ProfileProvider>().isFollowing(
+      currentUserId,
+      widget.userId,
+    );
+    if (mounted) {
+      setState(() => _isFollowing = isFollowing);
+    }
   }
 
   void _showMuteSheet(BuildContext context) {
@@ -168,10 +180,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(height: context.spacingMd),
                     _ActionButtons(
                       isFollowing: _isFollowing,
-                      onFollowToggle: () {
-                        setState(() {
-                          _isFollowing = !_isFollowing;
-                        });
+                      onFollowToggle: () async {
+                        final currentUserId = context.read<AuthProvider>().user?.id;
+                        if (currentUserId == null) return;
+                        final newState = await context.read<ProfileProvider>().toggleFollow(currentUserId, widget.userId);
+                        if (mounted) {
+                          setState(() => _isFollowing = newState);
+                        }
                       },
                       muteLevel: _muteLevel,
                       onMuteTap: () => _showMuteSheet(context),

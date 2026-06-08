@@ -7,6 +7,10 @@ import 'core/router/app_router.dart';
 import 'core/services/theme_controller.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/supabase/auth_provider.dart';
+import 'package:bleeper/features/chats/data/chats_repository.dart';
+import 'package:bleeper/features/chats/data/chats_provider.dart';
+import 'package:bleeper/features/chats/data/messages_repository.dart';
+import 'package:bleeper/features/chats/data/messages_provider.dart';
 import 'package:bleeper/features/notifications/data/notification_repository.dart';
 import 'package:bleeper/features/notifications/data/notification_provider.dart';
 import 'package:bleeper/features/profile/data/profile_repository.dart';
@@ -105,6 +109,55 @@ Future<void> main() async {
                   }
                 } else if (authProvider.status == AuthStatus.unauthenticated) {
                   // Clear notifications on logout if needed
+                }
+                return provider;
+              },
+        ),
+        Provider(
+          create: (_) => ChatsRepository(Supabase.instance.client),
+        ),
+        Provider(
+          create: (_) => MessagesRepository(Supabase.instance.client),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, ChatsProvider>(
+          create: (context) =>
+              ChatsProvider(context.read<ChatsRepository>()),
+          update:
+              (
+                context,
+                authProvider,
+                ChatsProvider? chatsProvider,
+              ) {
+                final provider =
+                    chatsProvider ??
+                    ChatsProvider(context.read<ChatsRepository>());
+                if (authProvider.status == AuthStatus.authenticated &&
+                    authProvider.user != null) {
+                  if (provider.chats.isEmpty && !provider.isLoading) {
+                    provider.fetchChats(authProvider.user!.id);
+                  }
+                }
+                return provider;
+              },
+        ),
+        ChangeNotifierProxyProvider<ChatsProvider, MessagesProvider>(
+          create: (context) =>
+              MessagesProvider(context.read<MessagesRepository>()),
+          update:
+              (
+                context,
+                chatsProvider,
+                MessagesProvider? messagesProvider,
+              ) {
+                final provider =
+                    messagesProvider ??
+                    MessagesProvider(
+                      context.read<MessagesRepository>(),
+                    );
+                if (chatsProvider.chats.isNotEmpty &&
+                    provider.messages.isEmpty &&
+                    !provider.isLoading) {
+                  provider.loadMessages(chatsProvider.chats.first.id);
                 }
                 return provider;
               },

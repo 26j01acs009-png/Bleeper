@@ -2,36 +2,32 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../domain/models/chat_message_model.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
     super.key,
-    required this.text,
-    this.timeAgo,
-    this.isMe = false,
-    this.isRead = false,
+    required this.message,
   });
 
-  final String text;
-  final String? timeAgo;
-  final bool isMe;
-  final bool isRead;
+  final ChatMessage message;
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = isMe ? context.accent : context.surface;
-    final textColor = isMe ? Colors.white : context.textPrimary;
+    final bubbleColor = message.isMe ? context.accent : context.surface;
+    final textColor = message.isMe ? Colors.white : context.textPrimary;
 
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.only(
           bottom: AppSpacing.xs + 2,
-          left: isMe ? AppSpacing.xl : 0,
-          right: isMe ? 0 : AppSpacing.xl,
+          left: message.isMe ? AppSpacing.xl : 0,
+          right: message.isMe ? 0 : AppSpacing.xl,
         ),
         child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              message.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Container(
               padding: EdgeInsets.symmetric(
@@ -41,32 +37,32 @@ class ChatBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: bubbleColor,
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(isMe ? 16 : 4),
-                  topRight: Radius.circular(isMe ? 4 : 16),
+                  topLeft: Radius.circular(message.isMe ? 16 : 4),
+                  topRight: Radius.circular(message.isMe ? 4 : 16),
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
               ),
               child: Text(
-                text,
+                message.text,
                 style: AppTypography.body(textColor).copyWith(height: 1.3),
               ),
             ),
-            if (timeAgo != null) ...[
+            if (message.timeAgo != null) ...[
               SizedBox(height: 2),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    timeAgo!,
+                    message.timeAgo!,
                     style: AppTypography.caption(context.textTertiary),
                   ),
-                  if (isMe) ...[
+                  if (message.isMe) ...[
                     const SizedBox(width: 4),
                     Icon(
-                      isRead ? Icons.done_all : Icons.done,
+                      message.isRead ? Icons.done_all : Icons.done,
                       size: 14,
-                      color: isRead ? context.accent : context.textTertiary,
+                      color: message.isRead ? context.accent : context.textTertiary,
                     ),
                   ],
                 ],

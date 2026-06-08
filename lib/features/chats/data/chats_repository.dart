@@ -1,0 +1,187 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:bleeper/core/errors/app_error.dart';
+import 'package:bleeper/features/profile/domain/models/profile_model.dart';
+import 'package:bleeper/features/chats/domain/models/chat_model.dart';
+
+class ChatsRepository {
+  final SupabaseClient _supabase;
+
+  ChatsRepository(this._supabase);
+
+  Future<List<Chat>> getChats(String userId) async {
+    try {
+      final chatsResponse = await _supabase
+          .from('chats')
+          .select('''
+            id,
+            last_message_content,
+            last_message_at,
+            chat_participants!inner(chat_id, user_id)
+          ''')
+          .eq('chat_participants.user_id', userId)
+          .order('last_message_at', ascending: false);
+
+      final chats = chatsResponse as List<dynamic>;
+      if (chats.isEmpty) return [];
+
+      final List<Chat> result = [];
+      for (final chat in chats) {
+        final chatId = chat['id'] as String;
+        final participantsResponse = await _supabase
+            .from('chat_participants')
+            .select('user_id')
+            .eq('chat_id', chatId)
+            .neq('user_id', userId);
+
+        final participants = participantsResponse as List<dynamic>;
+        if (participants.isEmpty) continue;
+
+        final otherUserId = participants.first['user_id'] as String;
+        final profile = chat['profiles'] as Map<String, dynamic>;
+        result.add(Chat(
+          id: chatId,
+          name: profile['display_name'] as String? ?? profile['username'] as String? ?? 'Unknown',
+          preview: chat['last_message_content'] as String? ?? '',
+          timeAgo: _formatTimeAgo(chat['last_message_at'] as String?),
+          avatarUrl: profile['avatar_url'] as String?,
+          isOnline: profile['is_online'] as bool? ?? false,
+          unreadCount: null,
+          isRead: true,
+        ));
+      }
+
+      return result;
+    } catch (e) {
+      throw AppError('Failed to fetch chats: $e');
+    }
+  }
+
+  String _formatTimeAgo(String? isoString) {
+    if (isoString == null) return '';
+    final date = DateTime.parse(isoString);
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m';
+    if (diff.inDays < 1) return '${diff.inHours}h';
+    return '${diff.inDays}d';
+  }
+
+  Future<bool> chatExists(String user1Id, String user2Id) async {
+    try {
+      final response = await _supabase
+          .from('chat_participants')
+          .select('chat_id')
+          .eq('user_id', user1Id);
+
+      final user1Chats = response as List<dynamic>;
+      if (user1Chats.isEmpty) return false;
+
+      final chatIds = user1Chats.map((e) => e['chat_id']).toList();
+      final otherParticipants = await _supabase
+          .from('chat_participants')
+          .select('chat_id')
+          .inFilter('chat_id', chatIds)
+          .eq('user_id', user2Id);
+
+      return (otherParticipants as List<dynamic>).isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<String?> getExistingChatId(String user1Id, String user2Id) async {
+    try {
+      final response = await _supabase
+          .from('chat_participants')
+          .select('chat_id')
+          .eq('user_id', user1Id);
+
+      final user1Chats = response as List<dynamic>;
+      if (user1Chats.isEmpty) return null;
+
+      final chatIds = user1Chats.map((e) => e['chat_id']).toList();
+      final otherParticipants = await _supabase
+          .from('chat_participants')
+          .select('chat_id')
+          .inFilter('chat_id', chatIds)
+          .eq('user_id', user2Id);
+
+      final results = otherParticipants as List<dynamic>;
+      if (results.isEmpty) return null;
+      return results.first['chat_id'] as String;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<String> createChat(
+      String currentUserId, String otherUserId, String otherUserName) async {
+    try {
+      final existingId = await getExistingChatId(currentUserId, otherUserId);
+      if (existingId != null) return existingId;
+
+      final response = await _supabase.from('chats').insert({
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+        'last_message_at': DateTime.now().toIso8601String(),
+      }).select();
+
+      final chatId = (response as List<dynamic>).first['id'] as String;
+
+      await _supabase.from('chat_participants').insert([
+        {'chat_id': chatId, 'user_id': currentUserId},
+        {'chat_id': chatId, 'user_id': otherUserId}
+      ]);
+
+      return chatId;
+    } catch (e) {
+      throw AppError('Failed to create chat: $e');
+    }
+  }
+
+  Future<void> markAsRead(String chatId, String userId) async {
+    try {
+      await _supabase
+          .from('chat_participants')
+          .update({'last_read_at': DateTime.now().toIso8601String()})
+          .eq('chat_id', chatId)
+          .eq('user_id', userId);
+    } catch (e) {
+      throw AppError('Failed to mark chat as read: $e');
+    }
+  }
+
+  Future<List<ProfileModel>> searchUsers(String query, String currentUserId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .neq('id', currentUserId)
+          .ilike('username', '%$query%')
+          .limit(20);
+
+      final data = response as List<dynamic>;
+      return data.map((json) => ProfileModel.fromJson(json)).toList();
+    } catch (e) {
+      throw AppError('Failed to search users: $e');
+    }
+  }
+
+  Future<List<ProfileModel>> getFollowedUsers(String userId) async {
+    try {
+      final response = await _supabase
+          .from('follows')
+          .select('profiles!following_id(id, username, display_name, avatar_url, is_online)')
+          .eq('follower_id', userId);
+
+      final data = response as List<dynamic>;
+      return data.map((json) {
+        final profile = json['profiles'] as Map<String, dynamic>;
+        return ProfileModel.fromJson(profile);
+      }).toList();
+    } catch (e) {
+      throw AppError('Failed to fetch followed users: $e');
+    }
+  }
+}

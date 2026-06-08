@@ -11,6 +11,7 @@ class ProfileModel {
   final String? location;
   final String? website;
   final DateTime? updatedAt;
+  final bool? isOnline;
 
   ProfileModel({
     required this.id,
@@ -25,6 +26,7 @@ class ProfileModel {
     this.location,
     this.website,
     this.updatedAt,
+    this.isOnline,
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,7 @@ class ProfileModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
+      isOnline: json['is_online'] as bool? ?? json['isOnline'] as bool?,
     );
   }
 
