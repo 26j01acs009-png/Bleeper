@@ -10,13 +10,13 @@ class BleepDetailRepository {
     try {
       final userId = _supabase.auth.currentUser?.id;
 
-      final response = await _supabase
+      final bleepResponse = await _supabase
           .from('bleeps')
           .select()
           .eq('id', bleepId)
           .single();
 
-      final data = Map<String, dynamic>.from(response);
+      final data = Map<String, dynamic>.from(bleepResponse);
 
       if (data['user_id'] != null) {
         final profileResponse = await _supabase
@@ -30,12 +30,15 @@ class BleepDetailRepository {
         }
       }
 
-      final stats = data['bleep_stats'] as Map<String, dynamic>?;
+      final statsResponse = await _supabase
+          .from('bleep_stats')
+          .select('*')
+          .eq('bleep_id', bleepId)
+          .maybeSingle();
 
-      data['appreciates_count'] = stats?['appreciates_count'] as int? ?? 0;
-      data['discusses_count'] = stats?['discusses_count'] as int? ?? 0;
-      data['reshares_count'] = stats?['reshares_count'] as int? ?? 0;
-      data['views_count'] = stats?['views_count'] as int? ?? data['view_count'] as int? ?? 0;
+      if (statsResponse != null) {
+        data['bleep_stats'] = statsResponse;
+      }
 
       if (userId != null) {
         final appreciation = await _supabase
@@ -153,16 +156,50 @@ class BleepDetailRepository {
     }
   }
 
+  Future<void> deleteDiscussion(String discussionId) async {
+    try {
+      await _supabase
+          .from('discussions')
+          .delete()
+          .eq('id', discussionId);
+    } catch (e) {
+      throw AppError('Failed to delete discussion: $e');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getDiscussions(String bleepId) async {
     try {
-      final response = await _supabase
+      final discussions = await _supabase
           .from('discussions')
-          .select('*, profiles(username, display_name, avatar_url)')
+          .select()
           .eq('bleep_id', bleepId)
-          .filter('parent_id', 'is', null)
           .order('created_at', ascending: true);
 
-      return response;
+      final userIds = discussions
+          .map((d) => d['user_id'] as String)
+          .toSet()
+          .toList();
+
+      final profiles = <String, Map<String, dynamic>>{};
+      if (userIds.isNotEmpty) {
+        final profileRows = await _supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url')
+            .inFilter('id', userIds);
+
+        for (final row in profileRows) {
+          profiles[row['id'] as String] = row;
+        }
+      }
+
+      return discussions.map((d) {
+        final uid = d['user_id'] as String;
+        final profile = profiles[uid];
+        return Map<String, dynamic>.from(d)
+          ..addAll({
+            'profiles': profile,
+          });
+      }).toList();
     } catch (e) {
       throw AppError('Failed to fetch discussions: $e');
     }

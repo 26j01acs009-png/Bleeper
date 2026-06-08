@@ -111,12 +111,46 @@ class BleepProvider extends ChangeNotifier {
   }
 
   Future<void> toggleAppreciate(String userId, String bleepId) async {
-    await _repository.toggleAppreciate(userId, bleepId);
+    final index = _bleeps.indexWhere((b) => b.id == bleepId);
+    if (index == -1) return;
+    final old = _bleeps[index];
+    final nowAppreciated = !old.isAppreciatedByMe;
+
+    _bleeps = List<Bleep>.from(_bleeps);
+    _bleeps[index] = old.copyWith(
+      isAppreciatedByMe: nowAppreciated,
+      appreciatesCount: old.appreciatesCount + (nowAppreciated ? 1 : -1),
+    );
     notifyListeners();
+
+    try {
+      await _repository.toggleAppreciate(userId, bleepId);
+    } catch (_) {
+      _bleeps = List<Bleep>.from(_bleeps);
+      _bleeps[index] = old;
+      notifyListeners();
+    }
   }
 
   Future<void> toggleReshare(String userId, String bleepId) async {
-    await _repository.toggleReshare(userId, bleepId);
+    final index = _bleeps.indexWhere((b) => b.id == bleepId);
+    if (index == -1) return;
+    final old = _bleeps[index];
+    final nowReshared = !old.isResharedByMe;
+
+    _bleeps = List<Bleep>.from(_bleeps);
+    _bleeps[index] = old.copyWith(
+      isResharedByMe: nowReshared,
+      resharesCount: old.resharesCount + (nowReshared ? 1 : -1),
+    );
     notifyListeners();
+
+    try {
+      await _repository.toggleReshare(userId, bleepId);
+    } catch (_) {
+      _bleeps = List<Bleep>.from(_bleeps);
+      _bleeps[index] = old;
+      notifyListeners();
+    }
   }
 }

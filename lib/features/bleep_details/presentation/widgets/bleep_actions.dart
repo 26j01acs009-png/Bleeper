@@ -1,5 +1,6 @@
+import 'package:hugeicons/hugeicons.dart';
+import 'package:hugeicons/styles/stroke_rounded.dart';
 import 'package:flutter/material.dart';
-
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../features/home/domain/entities/bleep.dart';
 
@@ -22,27 +23,33 @@ class BleepActions extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _StatItem(
-              icon: bleep.isAppreciatedByMe
-                  ? Icons.favorite
-                  : Icons.favorite_border,
-              count: bleep.appreciatesCount,
-              label: 'Appreciations',
-              active: bleep.isAppreciatedByMe,
-              onTap: onAppreciate,
+            Expanded(
+              child: _ActionButton(
+                icon: bleep.isAppreciatedByMe
+                    ? HugeIconsStrokeRounded.strokeRoundedHeartCheck
+                    : HugeIconsStrokeRounded.heartAdd,
+                count: bleep.appreciatesCount,
+                label: 'Appreciations',
+                active: bleep.isAppreciatedByMe,
+                onTap: onAppreciate,
+              ),
             ),
-            _StatItem(
-              icon: Icons.repeat,
-              count: bleep.resharesCount,
-              label: 'Reshares',
-              active: bleep.isResharedByMe,
-              onTap: onReshare,
+            Expanded(
+              child: _ActionButton(
+                icon: HugeIconsStrokeRounded.repeat,
+                count: bleep.resharesCount,
+                label: 'Reshares',
+                active: bleep.isResharedByMe,
+                onTap: onReshare,
+              ),
             ),
-            _StatItem(
-              icon: Icons.visibility_outlined,
-              count: bleep.viewsCount,
-              label: 'Views',
-              onTap: () {},
+            Expanded(
+              child: _ActionButton(
+                icon: HugeIconsStrokeRounded.eye,
+                count: bleep.viewsCount,
+                label: 'Views',
+                onTap: () {},
+              ),
             ),
           ],
         ),
@@ -53,8 +60,8 @@ class BleepActions extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
-  const _StatItem({
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
     required this.icon,
     required this.count,
     required this.label,
@@ -62,7 +69,7 @@ class _StatItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final int count;
   final String label;
   final bool active;
@@ -72,46 +79,35 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) =>
-                  ScaleTransition(scale: animation, child: child),
-              child: Icon(
-                key: ValueKey(active),
-                icon,
-                size: 18,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HugeIcon(
+                icon: icon,
+                size: 17,
                 color: active ? context.error : context.textSecondary,
               ),
-            ),
-            SizedBox(width: context.spacingXs),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) =>
-                  FadeTransition(opacity: animation, child: child),
-              child: Text(
+              const SizedBox(width: 4),
+              Text(
                 '$count',
-                key: ValueKey(count),
-                style: context.bodyMedium.copyWith(
+                style: context.caption.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
+                  color: active ? context.error : null,
                 ),
               ),
-            ),
-            SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                style: context.caption.copyWith(color: context.textTertiary),
-                overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: context.caption.copyWith(color: context.textTertiary),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

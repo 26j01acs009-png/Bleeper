@@ -176,7 +176,7 @@ class _CreateBleepScreenState extends State<CreateBleepScreen> {
       );
 
       if (mounted) {
-        context.go('/home');
+        context.pop('posted');
       }
     } catch (e) {
       if (mounted) {

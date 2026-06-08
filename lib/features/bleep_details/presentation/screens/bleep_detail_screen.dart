@@ -201,6 +201,15 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                         DiscussionsSection(
                           discussions: provider.discussions,
                           isLoading: provider.isLoadingDiscussions,
+                          totalCount: bleep.discussesCount,
+                          error: provider.discussionsError,
+                          currentUserId:
+                              context.read<AuthProvider>().user?.id,
+                          onDeleteDiscussion: (discussionId) async {
+                            await context
+                                .read<BleepDetailProvider>()
+                                .deleteDiscussion(discussionId);
+                          },
                         ),
                         SizedBox(height: context.spacingXl),
                       ],

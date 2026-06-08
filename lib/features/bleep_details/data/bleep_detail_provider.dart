@@ -18,6 +18,9 @@ class BleepDetailProvider extends ChangeNotifier {
   bool _isLoadingDiscussions = false;
   bool get isLoadingDiscussions => _isLoadingDiscussions;
 
+  String? _discussionsError;
+  String? get discussionsError => _discussionsError;
+
   String? _error;
   String? get error => _error;
 
@@ -70,8 +73,10 @@ class BleepDetailProvider extends ChangeNotifier {
     try {
       final jsonList = await _repository.getDiscussions(bleepId);
       _discussions = jsonList.map((json) => Discussion.fromJson(json)).toList();
+      _discussionsError = null;
     } catch (e) {
       _discussions = [];
+      _discussionsError = e.toString();
     } finally {
       _isLoadingDiscussions = false;
       if (!_isDisposed) notifyListeners();
@@ -79,40 +84,63 @@ class BleepDetailProvider extends ChangeNotifier {
   }
 
   Future<bool> toggleAppreciate(String userId, String bleepId) async {
+    final old = _bleepDetail;
+    if (old == null) return false;
+    final nowActive = !_isAppreciatedByMe;
+
+    _bleepDetail = old.copyWith(
+      isAppreciatedByMe: nowActive,
+      appreciatesCount: old.appreciatesCount + (nowActive ? 1 : -1),
+    );
+    _isAppreciatedByMe = nowActive;
+    if (!_isDisposed) notifyListeners();
+
     try {
       final isActive = await _repository.toggleAppreciate(userId, bleepId);
-      _isAppreciatedByMe = isActive;
-
-      if (_bleepDetail != null) {
-        _bleepDetail = _bleepDetail!.copyWith(
+      if (isActive != nowActive) {
+        _bleepDetail = old.copyWith(
           isAppreciatedByMe: isActive,
+          appreciatesCount: old.appreciatesCount + (isActive ? 1 : -1),
         );
+        _isAppreciatedByMe = isActive;
+        if (!_isDisposed) notifyListeners();
       }
-
-      if (!_isDisposed) notifyListeners();
       return isActive;
     } catch (e) {
-      _error = e.toString();
+      _bleepDetail = old;
+      _isAppreciatedByMe = !nowActive;
       if (!_isDisposed) notifyListeners();
       rethrow;
     }
   }
 
   Future<void> toggleReshare(String userId, String bleepId) async {
+    final old = _bleepDetail;
+    if (old == null) return;
+    final nowActive = !_isResharedByMe;
+
+    _bleepDetail = old.copyWith(
+      isResharedByMe: nowActive,
+      resharesCount: old.resharesCount + (nowActive ? 1 : -1),
+    );
+    _isResharedByMe = nowActive;
+    if (!_isDisposed) notifyListeners();
+
     try {
       final isActive = await _repository.toggleReshare(userId, bleepId);
-      _isResharedByMe = isActive;
-
-      if (_bleepDetail != null) {
-        _bleepDetail = _bleepDetail!.copyWith(
+      if (isActive != nowActive) {
+        _bleepDetail = old.copyWith(
           isResharedByMe: isActive,
+          resharesCount: old.resharesCount + (isActive ? 1 : -1),
         );
+        _isResharedByMe = isActive;
+        if (!_isDisposed) notifyListeners();
       }
-
-      if (!_isDisposed) notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      _bleepDetail = old;
+      _isResharedByMe = !nowActive;
       if (!_isDisposed) notifyListeners();
+      rethrow;
     }
   }
 
@@ -133,14 +161,37 @@ class BleepDetailProvider extends ChangeNotifier {
         content: content,
       );
 
-      if (_bleepDetail != null) {
-        _bleepDetail = _bleepDetail!.copyWith(
-          discussesCount: _bleepDetail!.discussesCount + 1,
-        );
-      }
+      _bleepDetail = _bleepDetail?.copyWith(
+        discussesCount: (_bleepDetail?.discussesCount ?? 0) + 1,
+      );
 
       await _loadDiscussions(_currentBleepId!);
     } catch (e) {
+      _error = e.toString();
+      if (!_isDisposed) notifyListeners();
+    }
+  }
+
+  Future<void> deleteDiscussion(String discussionId) async {
+    if (_currentBleepId == null) return;
+
+    final index = _discussions.indexWhere((d) => d.id == discussionId);
+    if (index == -1) return;
+
+    final oldDetail = _bleepDetail;
+    final oldDiscussions = List<Discussion>.from(_discussions);
+
+    _discussions.removeAt(index);
+    _bleepDetail = _bleepDetail?.copyWith(
+      discussesCount: (_bleepDetail?.discussesCount ?? 1) - 1,
+    );
+    if (!_isDisposed) notifyListeners();
+
+    try {
+      await _repository.deleteDiscussion(discussionId);
+    } catch (e) {
+      _discussions = oldDiscussions;
+      _bleepDetail = oldDetail;
       _error = e.toString();
       if (!_isDisposed) notifyListeners();
     }
