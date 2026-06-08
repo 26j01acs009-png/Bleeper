@@ -666,7 +666,7 @@ alter table public.chats enable row level security;
 
 create policy "Authenticated users can create chats"
   on public.chats for insert
-  with check (auth.role() = 'authenticated');
+  with check (auth.uid() IS NOT NULL);
 
 alter publication supabase_realtime add table public.chats;
 

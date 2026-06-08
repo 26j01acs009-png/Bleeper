@@ -250,7 +250,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
     });
 
     try {
-      final userId = context.read<AuthProvider>().user?.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
       final results = await _chatsRepository.searchUsers(query, userId);
       if (!_mounted) return;
@@ -273,7 +273,7 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
     });
 
     try {
-      final userId = context.read<AuthProvider>().user?.id;
+      final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId == null) return;
       final users = await _chatsRepository.getFollowedUsers(userId);
       if (!_mounted) return;
@@ -291,35 +291,42 @@ class _NewMessageScreenState extends State<NewMessageScreen> {
   }
 
   Future<void> _startChat(ProfileModel user) async {
-    final auth = context.read<AuthProvider>();
-    final currentUserId = auth.user?.id;
+    final supabase = Supabase.instance.client;
+    final currentUser = supabase.auth.currentUser;
+    final currentUserId = currentUser?.id;
     if (currentUserId == null) return;
 
     final messenger = ScaffoldMessenger.of(context);
     final navigator = GoRouter.of(context);
 
     try {
+      print('[NewMessageScreen] _startChat: currentUserId=$currentUserId other=${user.id}');
       final existingId = await _chatsRepository.getExistingChatId(
         currentUserId,
         user.id,
       );
+      print('[NewMessageScreen] _startChat: existingId=$existingId');
 
       if (!_mounted) return;
       if (existingId != null) {
+        print('[NewMessageScreen] _startChat: navigating to existing /chat/$existingId');
         navigator.push('/chat/$existingId');
         return;
       }
 
+      print('[NewMessageScreen] _startChat: creating new chat...');
       final chatId = await _chatsRepository.createChat(
         currentUserId,
         user.id,
         user.displayName ?? user.username ?? 'Unknown',
       );
+      print('[NewMessageScreen] _startChat: created chatId=$chatId');
 
       if (!_mounted) return;
       navigator.push('/chat/$chatId');
     } catch (e) {
       if (!_mounted) return;
+      print('[NewMessageScreen] _startChat ERROR: $e');
       messenger.showSnackBar(
         SnackBar(content: Text('Failed to start chat: $e')),
       );

@@ -6,9 +6,10 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 
 class ChatInput extends StatelessWidget {
-  const ChatInput({super.key, this.onSend});
+  const ChatInput({super.key, this.onSend, this.controller});
 
   final VoidCallback? onSend;
+  final TextEditingController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +23,7 @@ class ChatInput extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
+              controller: controller,
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 hintStyle: AppTypography.body(context.textSecondary),

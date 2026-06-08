@@ -24,27 +24,45 @@ class ChatsRepository {
       final chats = chatsResponse as List<dynamic>;
       if (chats.isEmpty) return [];
 
+      final otherUserIds = <String>[];
+      final chatIdToOtherUserId = <String, String>{};
+
+      for (final chat in chats) {
+        final chatId = chat['id'] as String;
+        final participants = chat['chat_participants'] as List<dynamic>;
+        for (final p in participants) {
+          final uid = p['user_id'] as String;
+          if (uid != userId) {
+            otherUserIds.add(uid);
+            chatIdToOtherUserId[chatId] = uid;
+          }
+        }
+      }
+
+      final uniqueOtherIds = otherUserIds.toSet().toList();
+      Map<String, ProfileModel> profileMap = {};
+      if (uniqueOtherIds.isNotEmpty) {
+        final profilesResponse = await _supabase
+            .from('profiles')
+            .select()
+            .inFilter('id', uniqueOtherIds);
+        final profilesList = profilesResponse as List<dynamic>;
+        profileMap = {for (final p in profilesList) p['id'] as String: ProfileModel.fromJson(p)};
+      }
+
       final List<Chat> result = [];
       for (final chat in chats) {
         final chatId = chat['id'] as String;
-        final participantsResponse = await _supabase
-            .from('chat_participants')
-            .select('user_id')
-            .eq('chat_id', chatId)
-            .neq('user_id', userId);
+        final otherUserId = chatIdToOtherUserId[chatId];
+        final profile = otherUserId != null ? profileMap[otherUserId] : null;
 
-        final participants = participantsResponse as List<dynamic>;
-        if (participants.isEmpty) continue;
-
-        final otherUserId = participants.first['user_id'] as String;
-        final profile = chat['profiles'] as Map<String, dynamic>;
         result.add(Chat(
           id: chatId,
-          name: profile['display_name'] as String? ?? profile['username'] as String? ?? 'Unknown',
+          name: profile?.displayName ?? profile?.username ?? 'Unknown',
           preview: chat['last_message_content'] as String? ?? '',
           timeAgo: _formatTimeAgo(chat['last_message_at'] as String?),
-          avatarUrl: profile['avatar_url'] as String?,
-          isOnline: profile['is_online'] as bool? ?? false,
+          avatarUrl: profile?.avatarUrl,
+          isOnline: profile?.isOnline ?? false,
           unreadCount: null,
           isRead: true,
         ));
@@ -149,6 +167,21 @@ class ChatsRepository {
           .eq('user_id', userId);
     } catch (e) {
       throw AppError('Failed to mark chat as read: $e');
+    }
+  }
+
+  Future<ProfileModel?> getProfileById(String userId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response == null) return null;
+      return ProfileModel.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      return null;
     }
   }
 
