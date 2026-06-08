@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <!-- Background circle -->
+  <circle cx="60" cy="60" r="56" fill="#0B69FF"/>
+
+  <!-- Chat tail -->
+  <path d="M28 84 L40 76 L36 58" fill="#0B69FF"/>
+
+  <!-- Inner rounded bubble to create a white border effect -->
+  <circle cx="60" cy="54" r="36" fill="#FFFFFF" opacity="0.06"/>
+
+  <!-- Pulse / 'b' mark -->
+  <path d="M22 64 L38 48 L48 64 L62 40 L76 76 L94 76" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- White center circle to suggest 'b' negative space -->
+  <circle cx="84" cy="46" r="7" fill="#FFFFFF"/>
+</svg>
