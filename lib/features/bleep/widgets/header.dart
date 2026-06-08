@@ -13,6 +13,7 @@ class BleepCardHeader extends StatelessWidget {
     this.onMore,
     this.currentUserId,
     this.isFollowing = false,
+    this.onFollowToggle,
   });
 
   final Bleep bleep;
@@ -20,6 +21,7 @@ class BleepCardHeader extends StatelessWidget {
   final VoidCallback? onMore;
   final String? currentUserId;
   final bool isFollowing;
+  final VoidCallback? onFollowToggle;
 
   bool get isOwnPost => currentUserId != null && bleep.userId == currentUserId;
 
@@ -35,49 +37,37 @@ class BleepCardHeader extends StatelessWidget {
     if (onMore != null) onMore!();
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isOwnPost) ...[
-              _SheetTile(
-                icon: Icons.edit_outlined,
-                label: 'Edit',
-                onTap: () => Navigator.pop(ctx),
+      builder: (ctx) {
+        bool localFollowing = isFollowing;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isOwnPost) ...[
+                    _SheetTile(icon: Icons.edit_outlined, label: 'Edit', onTap: () => Navigator.pop(ctx)),
+                    _SheetTile(icon: Icons.delete_outline, label: 'Delete', onTap: () => Navigator.pop(ctx)),
+                  ] else ...[
+                    _SheetTile(
+                      icon: localFollowing ? Icons.person_remove : Icons.person_add,
+                      label: localFollowing ? 'Unfollow' : 'Follow',
+                      onTap: () {
+                        setState(() => localFollowing = !localFollowing);
+                        onFollowToggle?.call();
+                      },
+                    ),
+                    _SheetTile(icon: Icons.volume_off_outlined, label: 'Mute', onTap: () => Navigator.pop(ctx)),
+                    _SheetTile(icon: Icons.block_outlined, label: 'Block', onTap: () => Navigator.pop(ctx)),
+                    _SheetTile(icon: Icons.flag_outlined, label: 'Report', onTap: () => Navigator.pop(ctx)),
+                  ],
+                ],
               ),
-              _SheetTile(
-                icon: Icons.delete_outline,
-                label: 'Delete',
-                onTap: () => Navigator.pop(ctx),
-              ),
-            ] else ...[
-              _SheetTile(
-                icon: isFollowing
-                    ? Icons.person_2_outlined
-                    : Icons.person_add_outlined,
-                label: isFollowing ? 'Unfollow' : 'Follow',
-                onTap: () => Navigator.pop(ctx),
-              ),
-              _SheetTile(
-                icon: Icons.volume_off_outlined,
-                label: 'Mute',
-                onTap: () => Navigator.pop(ctx),
-              ),
-              _SheetTile(
-                icon: Icons.block_outlined,
-                label: 'Block',
-                onTap: () => Navigator.pop(ctx),
-              ),
-              _SheetTile(
-                icon: Icons.flag_outlined,
-                label: 'Report',
-                onTap: () => Navigator.pop(ctx),
-              ),
-            ],
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 

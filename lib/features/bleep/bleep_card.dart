@@ -20,6 +20,7 @@ class BleepCard extends StatelessWidget {
     this.borderColor,
     this.currentUserId,
     this.isFollowing = false,
+    this.onFollowToggle,
   });
 
   final Bleep bleep;
@@ -34,6 +35,7 @@ class BleepCard extends StatelessWidget {
   final Color? borderColor;
   final String? currentUserId;
   final bool isFollowing;
+  final VoidCallback? onFollowToggle;
 
   @override
   Widget build(BuildContext context) {

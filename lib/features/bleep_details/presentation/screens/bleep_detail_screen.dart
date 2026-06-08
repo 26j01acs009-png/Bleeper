@@ -8,7 +8,6 @@ import '../../../../core/theme/app_theme_data.dart';
 import '../../../../core/supabase/auth_provider.dart';
 import '../../../../features/bleep_details/data/bleep_detail_provider.dart';
 import '../../../../features/home/data/bleep_repository.dart';
-import '../../../../features/home/data/bleep_provider.dart';
 import '../widgets/bleep_content.dart';
 import '../widgets/bleep_actions.dart';
 import '../widgets/discussions_section.dart';
@@ -139,8 +138,8 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                             context.read<AuthProvider>().user?.id) ...[
                           _DetailActionIcon(
                             icon: _isFollowingAuthor
-                                ? Icons.person_2
-                                : Icons.person_add_outlined,
+                                ? Icons.person_remove
+                                : Icons.person_add,
                             onTap: () async {
                               final currentUserId = context
                                   .read<AuthProvider>()
@@ -148,7 +147,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                                   ?.id;
                               if (currentUserId != null) {
                                 final newState = await context
-                                    .read<BleepProvider>()
+                                    .read<BleepRepository>()
                                     .toggleFollow(currentUserId, bleep.userId);
                                 if (mounted) {
                                   setState(() => _isFollowingAuthor = newState);
@@ -320,7 +319,7 @@ class _DetailActionIcon extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Icon(icon, size: 18, color: context.textSecondary),
+          child: Icon(icon, size: 25, color: context.textSecondary),
         ),
       ),
     );

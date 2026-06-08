@@ -235,6 +235,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               borderColor: context.divider,
               currentUserId: context.read<AuthProvider>().user?.id,
               isFollowing: false,
+              onFollowToggle: () {
+                final userId = context.read<AuthProvider>().user?.id;
+                if (userId != null) {
+                  context.read<BleepProvider>().toggleFollow(userId, bleep.userId);
+                }
+              },
               onAppreciate: () {
                 final userId = context.read<AuthProvider>().user?.id;
                 if (userId != null) {
