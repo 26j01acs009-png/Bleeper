@@ -155,17 +155,30 @@ class BleepDetailProvider extends ChangeNotifier {
     }
 
     try {
-      await _repository.addDiscussion(
+      final discussionId = await _repository.addDiscussion(
         bleepId: _currentBleepId!,
         userId: userId,
         content: content,
       );
 
+      final profile = await _repository.getUserProfile(userId);
+
+      final newDiscussion = Discussion(
+        id: discussionId,
+        bleepId: _currentBleepId!,
+        userId: userId,
+        content: content,
+        createdAt: DateTime.now(),
+        username: profile?['username'] as String?,
+        displayName: profile?['display_name'] as String?,
+        avatarUrl: profile?['avatar_url'] as String?,
+      );
+
+      _discussions = List<Discussion>.from(_discussions)..add(newDiscussion);
       _bleepDetail = _bleepDetail?.copyWith(
         discussesCount: (_bleepDetail?.discussesCount ?? 0) + 1,
       );
-
-      await _loadDiscussions(_currentBleepId!);
+      if (!_isDisposed) notifyListeners();
     } catch (e) {
       _error = e.toString();
       if (!_isDisposed) notifyListeners();

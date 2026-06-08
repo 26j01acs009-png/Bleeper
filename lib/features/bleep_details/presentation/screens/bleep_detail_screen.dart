@@ -97,7 +97,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                   Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: context.screenPadding,
-                      vertical: context.spacingMd,
+                      vertical: context.spacingSm,
                     ),
                     child: Row(
                       children: [
@@ -110,7 +110,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Text('Bleep', style: context.h3),
+                        Text('Bleep', style: context.h2),
                         const Spacer(),
                         SizedBox(width: 24),
                       ],
@@ -203,8 +203,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                           isLoading: provider.isLoadingDiscussions,
                           totalCount: bleep.discussesCount,
                           error: provider.discussionsError,
-                          currentUserId:
-                              context.read<AuthProvider>().user?.id,
+                          currentUserId: context.read<AuthProvider>().user?.id,
                           onDeleteDiscussion: (discussionId) async {
                             await context
                                 .read<BleepDetailProvider>()

@@ -138,19 +138,20 @@ class BleepDetailRepository {
     }
   }
 
-  Future<void> addDiscussion({
+  Future<String> addDiscussion({
     required String bleepId,
     required String userId,
     required String content,
     String? parentId,
   }) async {
     try {
-      await _supabase.from('discussions').insert({
+      final response = await _supabase.from('discussions').insert({
         'bleep_id': bleepId,
         'user_id': userId,
         'content': content,
         'parent_id': parentId,
-      });
+      }).select('id').single();
+      return response['id'] as String;
     } catch (e) {
       throw AppError('Failed to add discussion: $e');
     }
@@ -164,6 +165,19 @@ class BleepDetailRepository {
           .eq('id', discussionId);
     } catch (e) {
       throw AppError('Failed to delete discussion: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final response = await _supabase
+          .from('profiles')
+          .select('username, display_name, avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+      return response;
+    } catch (e) {
+      return null;
     }
   }
 
