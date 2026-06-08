@@ -116,60 +116,61 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.screenPadding,
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: context.accent.withValues(
-                            alpha: 0.12,
-                          ),
-                          backgroundImage: authorAvatarUrl != null
-                              ? NetworkImage(authorAvatarUrl)
-                              : null,
-                          child: authorAvatarUrl == null
-                              ? const DefaultAvatar(size: 32)
-                              : null,
-                        ),
-                        SizedBox(width: context.spacingSm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                authorName,
-                                style: context.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                '@$authorUsername',
-                                style: context.caption.copyWith(
-                                  color: context.textTertiary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: context.spacingMd),
-                  Divider(height: 1, thickness: 0.5, color: context.divider),
-                  SizedBox(height: context.spacingMd),
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.symmetric(
                         horizontal: context.screenPadding,
                       ),
                       children: [
+                        SizedBox(height: context.spacingMd),
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () =>
+                                  context.push('/identity/${bleep.userId}'),
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: context.accent.withValues(
+                                  alpha: 0.12,
+                                ),
+                                backgroundImage: authorAvatarUrl != null
+                                    ? NetworkImage(authorAvatarUrl)
+                                    : null,
+                                child: authorAvatarUrl == null
+                                    ? const DefaultAvatar(size: 40)
+                                    : null,
+                              ),
+                            ),
+                            SizedBox(width: context.spacingSm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => context
+                                        .push('/identity/${bleep.userId}'),
+                                    child: Text(
+                                      authorName,
+                                      style: context.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    '@$authorUsername',
+                                    style: context.caption.copyWith(
+                                      color: context.textTertiary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         SizedBox(height: context.spacingMd),
                         BleepContent(
                           content: bleep.content,
