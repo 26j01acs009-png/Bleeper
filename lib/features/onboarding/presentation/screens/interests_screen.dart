@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../features/profile/presentation/screens/setup_username_screen.dart';
 
 class InterestsScreen extends StatefulWidget {
   const InterestsScreen({super.key});
@@ -70,7 +72,7 @@ class _InterestsScreenState extends State<InterestsScreen> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: _selected.isNotEmpty
-                    ? () => context.go('/home')
+                    ? () => context.go('/setup/username')
                     : null,
                 child: const Text('Continue'),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../errors/app_error.dart';
 import 'auth_repository.dart';
+import 'profile_repository.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
@@ -65,6 +66,10 @@ class AuthProvider extends ChangeNotifier implements Listenable {
     try {
       await _authRepository.signUp(email: email, password: password);
       _pendingEmail = email;
+      await profileRepository.createProfile(
+        userId: _authRepository.currentUser!.id,
+        email: email,
+      );
     } catch (e) {
       if (e is AppError) {
         _errorMessage = e.message;

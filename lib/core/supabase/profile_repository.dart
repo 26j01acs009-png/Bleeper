@@ -8,12 +8,12 @@ class ProfileRepository {
 
   Future<Map<String, dynamic>> createProfile({
     required String userId,
-    required String username,
+    required String email,
   }) async {
     try {
       final response = await _client.from('profiles').upsert({
         'id': userId,
-        'username': username,
+        'email': email,
       });
       return response;
     } catch (e) {

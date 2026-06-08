@@ -20,6 +20,9 @@ import '../../features/auth/presentation/screens/email_verification_screen.dart'
 import '../../features/auth/presentation/screens/password_reset_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/setup_username_screen.dart';
+import '../../features/profile/presentation/screens/setup_name_screen.dart';
+import '../../features/profile/presentation/screens/setup_gender_dob_screen.dart';
 import '../../features/bleep_details/presentation/screens/bleep_detail_screen.dart';
 import '../supabase/auth_provider.dart';
 import '../presentation/screens/splash_screen.dart';
@@ -144,6 +147,21 @@ List<RouteBase> appRoutes = [
     path: '/edit-profile',
     name: 'editProfile',
     builder: (context, state) => const EditProfileScreen(),
+  ),
+  GoRoute(
+    path: '/setup/username',
+    name: 'setupUsername',
+    builder: (context, state) => const SetupUsernameScreen(),
+  ),
+  GoRoute(
+    path: '/setup/name',
+    name: 'setupName',
+    builder: (context, state) => const SetupNameScreen(),
+  ),
+  GoRoute(
+    path: '/setup/gender-dob',
+    name: 'setupGenderDob',
+    builder: (context, state) => const SetupGenderDobScreen(),
   ),
   GoRoute(
     path: '/bleep/:bleepId',

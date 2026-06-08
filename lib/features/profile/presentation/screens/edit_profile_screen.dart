@@ -19,6 +19,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _usernameController;
   late final TextEditingController _bioController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _websiteController;
   File? _pickedImage;
 
   @override
@@ -28,6 +31,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nameController = TextEditingController(text: profile?.displayName ?? '');
     _usernameController = TextEditingController(text: profile?.username ?? '');
     _bioController = TextEditingController(text: profile?.bio ?? '');
+    _phoneController = TextEditingController(text: profile?.phone ?? '');
+    _locationController = TextEditingController(text: profile?.location ?? '');
+    _websiteController = TextEditingController(text: profile?.website ?? '');
   }
 
   @override
@@ -66,6 +72,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         displayName: _nameController.text,
         avatarUrl: avatarUrl,
         bio: _bioController.text,
+        phone: _phoneController.text,
+        dateOfBirth: currentProfile.dateOfBirth,
+        gender: currentProfile.gender,
+        location: _locationController.text,
+        website: _websiteController.text,
         updatedAt: DateTime.now(),
       );
 
@@ -188,6 +199,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               hintText: 'Bio',
               label: 'Bio',
               maxLines: 3,
+            ),
+            SizedBox(height: context.spacingMd),
+            BleeperInput(
+              controller: _phoneController,
+              hintText: 'Phone number',
+              label: 'Phone',
+              prefixIcon: Icons.phone,
+            ),
+            SizedBox(height: context.spacingMd),
+            BleeperInput(
+              controller: _locationController,
+              hintText: 'Location',
+              label: 'Location',
+              prefixIcon: Icons.location_on,
+            ),
+            SizedBox(height: context.spacingMd),
+            BleeperInput(
+              controller: _websiteController,
+              hintText: 'Website',
+              label: 'Website',
+              prefixIcon: Icons.link,
             ),
             SizedBox(height: context.spacingXxl),
           ],
