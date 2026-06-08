@@ -14,11 +14,15 @@ class BleepRepository {
     int offset = 0,
   }) async {
     try {
+      final rpcName = switch (feedType) {
+        'circles' => 'get_circles_feed',
+        'following' => 'get_following_feed',
+        _ => 'get_for_you_feed',
+      };
       final response = await _supabase.rpc(
-        'get_homefeed',
+        rpcName,
         params: {
-          'auth_user_id': userId,
-          'p_feed_type': feedType,
+          'p_user_id': userId,
           'p_limit': limit,
           'p_offset': offset,
         },

@@ -1,212 +1,276 @@
--- Bleeper Homefeed
--- LANGUAGE SQL to avoid PL/pgSQL variable shadowing.
--- Internal CTEs use "writer_id"; final SELECT exposes "user_id".
+-- Bleeper Homefeed SQL
+-- RPC functions for For You, Following, and Circles tabs
 
-DROP FUNCTION IF EXISTS get_homefeed(uuid, text, int, int);
-
-CREATE OR REPLACE FUNCTION get_homefeed(
-  auth_user_id UUID,
-  p_feed_type TEXT DEFAULT 'for_you',
-  p_limit INT DEFAULT 20,
-  p_offset INT DEFAULT 0
+-- =============================================================================
+-- FOR YOU TAB
+-- =============================================================================
+-- Returns: user's own posts (any visibility), public posts from others,
+--          posts from followed users, posts from circles user belongs to.
+--          Excludes muted and blocked users.
+drop function if exists public.get_for_you_feed(uuid, int, int);
+create or replace function public.get_for_you_feed(
+  p_user_id uuid,
+  p_limit int default 50,
+  p_offset int default 0
 )
-RETURNS TABLE (
-  id UUID,
-  user_id UUID,
-  content TEXT,
-  media_url TEXT,
-  circle_id UUID,
-  circle_name TEXT,
-  circle_slug TEXT,
-  visibility TEXT,
-  reply_permission TEXT,
-  reshare_permission TEXT,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ,
-  author_username TEXT,
-  author_display_name TEXT,
-  author_avatar_url TEXT,
-  appreciates_count BIGINT,
-  discusses_count BIGINT,
-  reshares_count BIGINT,
-  views_count BIGINT
+returns table (
+  id uuid,
+  user_id uuid,
+  content text,
+  media_url text,
+  circle_id uuid,
+  visibility text,
+  reply_permission text,
+  reshare_permission text,
+  created_at timestamptz,
+  updated_at timestamptz,
+  author_username text,
+  author_display_name text,
+  author_avatar_url text,
+  circle_name text,
+  circle_slug text,
+  circle_avatar_url text,
+  appreciates_count bigint,
+  reshares_count bigint,
+  discusses_count bigint,
+  views_count bigint,
+  appreciated boolean,
+  reshared boolean
 )
-LANGUAGE sql
-STABLE
-AS $$
-WITH
-  -- Users to exclude (muted or blocked)
-  excluded AS (
-    SELECT muted_id  AS eid FROM public.mutes   WHERE mutes.user_id   = auth_user_id
-    UNION
-    SELECT blocked_id AS eid FROM public.blocks WHERE blocks.user_id = auth_user_id
-  ),
-
-  -- Users the auth user follows
-  following AS (
-    SELECT following_id AS fid FROM public.follows WHERE follows.follower_id = auth_user_id
-  ),
-
-  -- Circles the auth user belongs to
-  circles AS (
-    SELECT circle_members.circle_id AS cid
-    FROM public.circle_members
-    WHERE circle_members.user_id = auth_user_id
-  ),
-
-  -- Base bleeps with author renamed to writer_id internally
-  base AS (
-    SELECT
-      b.id,
-      b.user_id        AS writer_id,
-      b.content,
-      b.media_url,
-      b.circle_id,
-      b.visibility,
-      b.reply_permission,
-      b.reshare_permission,
-      b.created_at,
-      b.updated_at
-    FROM public.bleeps b
-    LEFT JOIN excluded ex ON b.user_id = ex.eid
-    WHERE ex.eid IS NULL
-  ),
-
-  -- Feed variants
-  for_you_feed AS (
-    SELECT writer_id, id, content, media_url, circle_id,
-           visibility, reply_permission, reshare_permission,
-           created_at, updated_at
-    FROM base
-    WHERE visibility = 'public'
-       OR EXISTS (SELECT 1 FROM following f  WHERE f.fid  = writer_id)
-       OR (circle_id IS NOT NULL
-           AND EXISTS (SELECT 1 FROM circles c WHERE c.cid = circle_id))
-       OR writer_id = auth_user_id
-  ),
-  following_feed AS (
-    SELECT writer_id, id, content, media_url, circle_id,
-           visibility, reply_permission, reshare_permission,
-           created_at, updated_at
-    FROM base
-    WHERE EXISTS (SELECT 1 FROM following f WHERE f.fid = writer_id)
-       OR writer_id = auth_user_id
-  ),
-  circles_feed AS (
-    SELECT writer_id, id, content, media_url, circle_id,
-           visibility, reply_permission, reshare_permission,
-           created_at, updated_at
-    FROM base
-    WHERE (circle_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM circles c WHERE c.cid = circle_id))
-       OR writer_id = auth_user_id
-  ),
-
-  -- Select the correct feed
-  picked AS (
-    SELECT * FROM for_you_feed   WHERE p_feed_type = 'for_you'
-    UNION ALL
-    SELECT * FROM following_feed WHERE p_feed_type = 'following'
-    UNION ALL
-    SELECT * FROM circles_feed   WHERE p_feed_type = 'circles'
-  ),
-
-  -- Join author profile (uses writer_id internally)
-  author AS (
-    SELECT
-      p.writer_id  AS id,
-      p.writer_id,
-      p.content,
-      p.media_url,
-      p.circle_id,
-      p.visibility,
-      p.reply_permission,
-      p.reshare_permission,
-      p.created_at,
-      p.updated_at,
-      pr.username        AS author_username,
-      pr.display_name    AS author_display_name,
-      pr.avatar_url      AS author_avatar_url
-    FROM picked p
-    LEFT JOIN public.profiles pr ON pr.id = p.writer_id
-  ),
-
-  -- Join circle info
-  circled AS (
-    SELECT
-      a.id,
-      a.writer_id,
-      a.content,
-      a.media_url,
-      a.circle_id,
-      a.visibility,
-      a.reply_permission,
-      a.reshare_permission,
-      a.created_at,
-      a.updated_at,
-      a.author_username,
-      a.author_display_name,
-      a.author_avatar_url,
-      c.name AS circle_name,
-      c.slug AS circle_slug
-    FROM author a
-    LEFT JOIN public.circles c ON c.id = a.circle_id
-  ),
-
-  -- Join engagement stats; alias writer_id -> user_id ONLY here as final output column
-  stats AS (
-    SELECT
-      c.id,
-      c.writer_id        AS user_id,
-      c.content,
-      c.media_url,
-      c.circle_id,
-      c.visibility,
-      c.reply_permission,
-      c.reshare_permission,
-      c.created_at,
-      c.updated_at,
-      c.author_username,
-      c.author_display_name,
-      c.author_avatar_url,
-      c.circle_name,
-      c.circle_slug,
-      COALESCE(s.appreciates_count,0) AS appreciates_count,
-      COALESCE(s.discusses_count,0) AS discusses_count,
-      COALESCE(s.reshares_count,   0) AS reshares_count,
-      COALESCE(s.views_count,      0) AS views_count
-    FROM circled c
-    LEFT JOIN public.bleep_stats s ON s.bleep_id = c.id
-  )
-
-  -- Final output: only "user_id" appears here as the exposed column
-  SELECT
-    s.id,
-    s.user_id,
-    s.content,
-    s.media_url,
-    s.circle_id,
-    s.circle_name,
-    s.circle_slug,
-    s.visibility,
-    s.reply_permission,
-    s.reshare_permission,
-    s.created_at,
-    s.updated_at,
-    s.author_username,
-    s.author_display_name,
-    s.author_avatar_url,
-    s.appreciates_count,
-    s.discusses_count,
-    s.reshares_count,
-    s.views_count
-  FROM stats s
-  ORDER BY
-    CASE WHEN p_feed_type = 'for_you'
-         THEN (s.appreciates_count + s.discusses_count*2 + s.reshares_count*3 + s.views_count)
-         ELSE 0
-    END DESC,
-    s.created_at DESC
-  LIMIT p_limit
-  OFFSET p_offset;
+language sql
+security definer
+as $$
+  select
+    b.id,
+    b.user_id,
+    b.content,
+    b.media_url,
+    b.circle_id,
+    b.visibility,
+    b.reply_permission,
+    b.reshare_permission,
+    b.created_at,
+    b.updated_at,
+    p.username as author_username,
+    p.display_name as author_display_name,
+    p.avatar_url as author_avatar_url,
+    c.name as circle_name,
+    c.slug as circle_slug,
+    c.avatar_url as circle_avatar_url,
+    coalesce(bs.appreciates_count, 0) as appreciates_count,
+    coalesce(bs.reshares_count, 0) as reshares_count,
+    coalesce(bs.discusses_count, 0) as discusses_count,
+    coalesce(bs.views_count, 0) as views_count,
+    exists (select 1 from public.appreciations a where a.bleep_id = b.id and a.user_id = p_user_id) as appreciated,
+    exists (select 1 from public.reshares r where r.bleep_id = b.id and r.user_id = p_user_id) as reshared
+  from public.bleeps b
+  join public.profiles p on p.id = b.user_id
+  left join public.circles c on c.id = b.circle_id
+  left join public.bleep_stats bs on bs.bleep_id = b.id
+  where
+    (
+      b.user_id = p_user_id
+      or b.visibility = 'public'
+      or exists (
+        select 1 from public.follows f
+        where f.follower_id = p_user_id and f.following_id = b.user_id
+      )
+      or (
+        b.circle_id is not null
+        and exists (
+          select 1 from public.circle_members cm
+          where cm.circle_id = b.circle_id and cm.user_id = p_user_id
+        )
+      )
+    )
+    and not exists (
+      select 1 from public.mutes m where m.user_id = p_user_id and m.muted_id = b.user_id
+    )
+    and not exists (
+      select 1 from public.blocks bl where bl.user_id = p_user_id and bl.blocked_id = b.user_id
+    )
+  order by b.created_at desc
+  limit p_limit
+  offset p_offset;
 $$;
+
+-- =============================================================================
+-- FOLLOWING TAB
+-- =============================================================================
+-- Returns: user's own posts + posts from users they follow.
+--          Excludes muted and blocked users.
+drop function if exists public.get_following_feed(uuid, int, int);
+create or replace function public.get_following_feed(
+  p_user_id uuid,
+  p_limit int default 50,
+  p_offset int default 0
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  content text,
+  media_url text,
+  circle_id uuid,
+  visibility text,
+  reply_permission text,
+  reshare_permission text,
+  created_at timestamptz,
+  updated_at timestamptz,
+  author_username text,
+  author_display_name text,
+  author_avatar_url text,
+  circle_name text,
+  circle_slug text,
+  circle_avatar_url text,
+  appreciates_count bigint,
+  reshares_count bigint,
+  discusses_count bigint,
+  views_count bigint,
+  appreciated boolean,
+  reshared boolean
+)
+language sql
+security definer
+as $$
+  select
+    b.id,
+    b.user_id,
+    b.content,
+    b.media_url,
+    b.circle_id,
+    b.visibility,
+    b.reply_permission,
+    b.reshare_permission,
+    b.created_at,
+    b.updated_at,
+    p.username as author_username,
+    p.display_name as author_display_name,
+    p.avatar_url as author_avatar_url,
+    c.name as circle_name,
+    c.slug as circle_slug,
+    c.avatar_url as circle_avatar_url,
+    coalesce(bs.appreciates_count, 0) as appreciates_count,
+    coalesce(bs.reshares_count, 0) as reshares_count,
+    coalesce(bs.discusses_count, 0) as discusses_count,
+    coalesce(bs.views_count, 0) as views_count,
+    exists (select 1 from public.appreciations a where a.bleep_id = b.id and a.user_id = p_user_id) as appreciated,
+    exists (select 1 from public.reshares r where r.bleep_id = b.id and r.user_id = p_user_id) as reshared
+  from public.bleeps b
+  join public.profiles p on p.id = b.user_id
+  left join public.circles c on c.id = b.circle_id
+  left join public.bleep_stats bs on bs.bleep_id = b.id
+  where
+    (
+      b.user_id = p_user_id
+      or exists (
+        select 1 from public.follows f
+        where f.follower_id = p_user_id and f.following_id = b.user_id
+      )
+    )
+    and not exists (
+      select 1 from public.mutes m where m.user_id = p_user_id and m.muted_id = b.user_id
+    )
+    and not exists (
+      select 1 from public.blocks bl where bl.user_id = p_user_id and bl.blocked_id = b.user_id
+    )
+  order by b.created_at desc
+  limit p_limit
+  offset p_offset;
+$$;
+
+-- =============================================================================
+-- CIRCLES TAB
+-- =============================================================================
+-- Returns: user's own posts in circles + posts from circles they belong to.
+--          Excludes muted and blocked users.
+drop function if exists public.get_circles_feed(uuid, int, int);
+create or replace function public.get_circles_feed(
+  p_user_id uuid,
+  p_limit int default 50,
+  p_offset int default 0
+)
+returns table (
+  id uuid,
+  user_id uuid,
+  content text,
+  media_url text,
+  circle_id uuid,
+  visibility text,
+  reply_permission text,
+  reshare_permission text,
+  created_at timestamptz,
+  updated_at timestamptz,
+  author_username text,
+  author_display_name text,
+  author_avatar_url text,
+  circle_name text,
+  circle_slug text,
+  circle_avatar_url text,
+  appreciates_count bigint,
+  reshares_count bigint,
+  discusses_count bigint,
+  views_count bigint,
+  appreciated boolean,
+  reshared boolean
+)
+language sql
+security definer
+as $$
+  select
+    b.id,
+    b.user_id,
+    b.content,
+    b.media_url,
+    b.circle_id,
+    b.visibility,
+    b.reply_permission,
+    b.reshare_permission,
+    b.created_at,
+    b.updated_at,
+    p.username as author_username,
+    p.display_name as author_display_name,
+    p.avatar_url as author_avatar_url,
+    c.name as circle_name,
+    c.slug as circle_slug,
+    c.avatar_url as circle_avatar_url,
+    coalesce(bs.appreciates_count, 0) as appreciates_count,
+    coalesce(bs.reshares_count, 0) as reshares_count,
+    coalesce(bs.discusses_count, 0) as discusses_count,
+    coalesce(bs.views_count, 0) as views_count,
+    exists (select 1 from public.appreciations a where a.bleep_id = b.id and a.user_id = p_user_id) as appreciated,
+    exists (select 1 from public.reshares r where r.bleep_id = b.id and r.user_id = p_user_id) as reshared
+  from public.bleeps b
+  join public.profiles p on p.id = b.user_id
+  left join public.circles c on c.id = b.circle_id
+  left join public.bleep_stats bs on bs.bleep_id = b.id
+  where
+    b.circle_id is not null
+    and (
+      b.user_id = p_user_id
+      or exists (
+        select 1 from public.circle_members cm
+        where cm.circle_id = b.circle_id and cm.user_id = p_user_id
+      )
+    )
+    and not exists (
+      select 1 from public.mutes m where m.user_id = p_user_id and m.muted_id = b.user_id
+    )
+    and not exists (
+      select 1 from public.blocks bl where bl.user_id = p_user_id and bl.blocked_id = b.user_id
+    )
+  order by b.created_at desc
+  limit p_limit
+  offset p_offset;
+$$;
+
+-- =============================================================================
+-- INDEXES TO SUPPORT HOME FEED QUERIES
+-- =============================================================================
+drop index if exists idx_circle_members_lookup;
+drop index if exists idx_follows_lookup;
+drop index if exists idx_mutes_lookup;
+drop index if exists idx_blocks_lookup;
+create index if not exists idx_circle_members_lookup on public.circle_members (user_id, circle_id);
+create index if not exists idx_follows_lookup on public.follows (follower_id, following_id);
+create index if not exists idx_mutes_lookup on public.mutes (user_id, muted_id);
+create index if not exists idx_blocks_lookup on public.blocks (user_id, blocked_id);

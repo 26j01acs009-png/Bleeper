@@ -76,8 +76,12 @@ class Bleep {
       discussesCount: stats?['discusses_count'] as int? ?? json['discusses_count'] as int? ?? 0,
       resharesCount: stats?['reshares_count'] as int? ?? json['reshares_count'] as int? ?? 0,
       viewsCount: stats?['views_count'] as int? ?? json['views_count'] as int? ?? 0,
-      isAppreciatedByMe: json['is_appreciated_by_me'] as bool? ?? false,
-      isResharedByMe: json['is_reshared_by_me'] as bool? ?? false,
+      isAppreciatedByMe: json['is_appreciated_by_me'] as bool? ??
+          json['appreciated'] as bool? ??
+          false,
+      isResharedByMe: json['is_reshared_by_me'] as bool? ??
+          json['reshared'] as bool? ??
+          false,
     );
   }
 
