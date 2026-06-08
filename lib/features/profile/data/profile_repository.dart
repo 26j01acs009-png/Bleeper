@@ -33,11 +33,11 @@ class ProfileRepository {
       final extension = p.extension(filePath);
       final fileName = '$userId$extension';
 
-      await _supabase.storage
-          .from('avatars')
-          .uploadBinary(fileName, bytes);
+      await _supabase.storage.from('avatars').uploadBinary(fileName, bytes);
 
-      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
+      final publicUrl = _supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
       return publicUrl;
     } catch (e) {
       throw AppError('Failed to upload avatar: $e');

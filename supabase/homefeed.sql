@@ -82,6 +82,7 @@ WITH
        OR EXISTS (SELECT 1 FROM following f  WHERE f.fid  = writer_id)
        OR (circle_id IS NOT NULL
            AND EXISTS (SELECT 1 FROM circles c WHERE c.cid = circle_id))
+       OR writer_id = auth_user_id
   ),
   following_feed AS (
     SELECT writer_id, id, content, media_url, circle_id,
@@ -89,14 +90,16 @@ WITH
            created_at, updated_at
     FROM base
     WHERE EXISTS (SELECT 1 FROM following f WHERE f.fid = writer_id)
+       OR writer_id = auth_user_id
   ),
   circles_feed AS (
     SELECT writer_id, id, content, media_url, circle_id,
            visibility, reply_permission, reshare_permission,
            created_at, updated_at
     FROM base
-    WHERE circle_id IS NOT NULL
-      AND EXISTS (SELECT 1 FROM circles c WHERE c.cid = circle_id)
+    WHERE (circle_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM circles c WHERE c.cid = circle_id))
+       OR writer_id = auth_user_id
   ),
 
   -- Select the correct feed

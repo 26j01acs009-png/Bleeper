@@ -7,18 +7,25 @@ class BleepRepository {
 
   BleepRepository(this._supabase);
 
-  Future<List<Bleep>> getHomefeed(String userId, String feedType, {int limit = 20, int offset = 0}) async {
+  Future<List<Bleep>> getHomefeed(
+    String userId,
+    String feedType, {
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      print('[BleepRepository] getHomefeed RPC userId=$userId feedType=$feedType limit=$limit offset=$offset');
       final response = await _supabase.rpc(
         'get_homefeed',
-        params: {'auth_user_id': userId, 'p_feed_type': feedType, 'p_limit': limit, 'p_offset': offset},
+        params: {
+          'auth_user_id': userId,
+          'p_feed_type': feedType,
+          'p_limit': limit,
+          'p_offset': offset,
+        },
       );
       final data = response as List<dynamic>;
-      print('[BleepRepository] getHomefeed success rows=${data.length}');
       return data.map((json) => Bleep.fromJson(json)).toList();
     } catch (e) {
-      print('[BleepRepository] getHomefeed error=$e');
       throw AppError('Failed to fetch homefeed: $e');
     }
   }
@@ -40,9 +47,10 @@ class BleepRepository {
             .eq('bleep_id', bleepId);
         return false;
       } else {
-        await _supabase
-            .from('appreciations')
-            .insert({'user_id': userId, 'bleep_id': bleepId});
+        await _supabase.from('appreciations').insert({
+          'user_id': userId,
+          'bleep_id': bleepId,
+        });
         return true;
       }
     } catch (e) {
@@ -67,9 +75,10 @@ class BleepRepository {
             .eq('bleep_id', bleepId);
         return false;
       } else {
-        await _supabase
-            .from('reshares')
-            .insert({'user_id': userId, 'bleep_id': bleepId});
+        await _supabase.from('reshares').insert({
+          'user_id': userId,
+          'bleep_id': bleepId,
+        });
         return true;
       }
     } catch (e) {
