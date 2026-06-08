@@ -11,7 +11,7 @@ class NotificationRepository {
     try {
       final response = await _supabase
           .from('notifications')
-          .select('*, profiles:actor_id(username, display_name, avatar_url), bleeps:bleep_id(content, media_url)')
+          .select('*, profiles:actor_id(username, display_name, avatar_url)')
           .eq('recipient_id', userId)
           .order('created_at', ascending: false);
 

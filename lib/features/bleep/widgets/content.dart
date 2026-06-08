@@ -32,12 +32,12 @@ class _BleepCardContentState extends State<BleepCardContent> {
             expanded: _expanded,
             onToggle: () => setState(() => _expanded = !_expanded),
           ),
-          if (widget.bleep.imageUrl != null) ...[
+          if (widget.bleep.mediaUrl != null) ...[
             SizedBox(height: context.spacingSm),
             ClipRRect(
               borderRadius: BorderRadius.circular(context.radiusSm),
               child: Image.network(
-                widget.bleep.imageUrl!,
+                widget.bleep.mediaUrl!,
                 width: double.infinity,
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, progress) {

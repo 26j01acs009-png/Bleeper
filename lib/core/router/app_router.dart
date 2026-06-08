@@ -23,6 +23,7 @@ import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/setup_username_screen.dart';
 import '../../features/profile/presentation/screens/setup_name_screen.dart';
 import '../../features/profile/presentation/screens/setup_gender_dob_screen.dart';
+import '../../features/profile/data/profile_provider.dart';
 import '../../features/bleep_details/presentation/screens/bleep_detail_screen.dart';
 import '../supabase/auth_provider.dart';
 import '../presentation/screens/splash_screen.dart';
@@ -173,10 +174,9 @@ List<RouteBase> appRoutes = [
   ),
 ];
 
-GoRouter createAppRouter(AuthProvider auth) {
+GoRouter createAppRouter(AuthProvider auth, ProfileProvider profile) {
   return GoRouter(
-    initialLocation: '/splash',
-    refreshListenable: auth,
+    refreshListenable: Listenable.merge([auth, profile]),
     redirect: (context, state) {
       final path = state.uri.path;
       final currentAuth = auth; // Use the passed instance directly
@@ -203,6 +203,14 @@ GoRouter createAppRouter(AuthProvider auth) {
       if (currentAuth.status == AuthStatus.authenticated) {
         if (isAuthRoute || isOnboardingRoute || isSplash || path == '/') {
           return '/home';
+        }
+
+        final nextSetupRoute = context.read<ProfileProvider>().nextSetupRoute;
+        if (nextSetupRoute != null) {
+          final normalizedPath = path.split('?').first;
+          if (normalizedPath != nextSetupRoute) {
+            return nextSetupRoute;
+          }
         }
       }
       return null;

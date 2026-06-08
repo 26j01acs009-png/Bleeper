@@ -55,4 +55,24 @@ class ProfileProvider extends ChangeNotifier {
     _profile = null;
     notifyListeners();
   }
+
+  bool get isProfileComplete {
+    final p = _profile;
+    if (p == null) return false;
+    final hasUsername = (p.username ?? '').trim().isNotEmpty;
+    final hasName = (p.displayName ?? '').trim().isNotEmpty;
+    final hasDob = p.dateOfBirth != null;
+    final hasGender = (p.gender ?? '').trim().isNotEmpty;
+    return hasUsername && hasName && hasDob && hasGender;
+  }
+
+  String? get nextSetupRoute {
+    final p = _profile;
+    if (p == null) return _isLoading ? null : '/setup/username';
+    if ((p.username ?? '').trim().isEmpty) return '/setup/username';
+    if ((p.displayName ?? '').trim().isEmpty) return '/setup/name';
+    if (p.dateOfBirth == null) return '/setup/gender-dob';
+    if ((p.gender ?? '').trim().isEmpty) return '/setup/gender-dob';
+    return null;
+  }
 }

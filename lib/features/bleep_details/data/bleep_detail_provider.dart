@@ -69,8 +69,7 @@ class BleepDetailProvider extends ChangeNotifier {
 
     try {
       final jsonList = await _repository.getDiscussions(bleepId);
-      _discussions =
-          jsonList.map((json) => Discussion.fromJson(json)).toList();
+      _discussions = jsonList.map((json) => Discussion.fromJson(json)).toList();
     } catch (e) {
       _discussions = [];
     } finally {
@@ -85,9 +84,7 @@ class BleepDetailProvider extends ChangeNotifier {
       _isAppreciatedByMe = isActive;
 
       if (_bleepDetail != null) {
-        final currentCount = _bleepDetail!.appreciatesCount;
         _bleepDetail = _bleepDetail!.copyWith(
-          appreciatesCount: currentCount + (isActive ? 1 : -1),
           isAppreciatedByMe: isActive,
         );
       }
@@ -97,20 +94,18 @@ class BleepDetailProvider extends ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       if (!_isDisposed) notifyListeners();
-      return false;
+      rethrow;
     }
   }
 
   Future<void> toggleReshare(String userId, String bleepId) async {
     try {
-      await _repository.toggleReshare(userId, bleepId);
-      _isResharedByMe = !_isResharedByMe;
+      final isActive = await _repository.toggleReshare(userId, bleepId);
+      _isResharedByMe = isActive;
 
       if (_bleepDetail != null) {
-        final currentCount = _bleepDetail!.resharesCount;
         _bleepDetail = _bleepDetail!.copyWith(
-          resharesCount: currentCount + (_isResharedByMe ? 1 : -1),
-          isResharedByMe: _isResharedByMe,
+          isResharedByMe: isActive,
         );
       }
 
@@ -121,8 +116,15 @@ class BleepDetailProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addDiscussion(String userId, String content) async {
-    if (_currentBleepId == null) return;
+  Future<void> addDiscussion({
+    required String userId,
+    required String content,
+  }) async {
+    if (_currentBleepId == null) {
+      _error = 'No bleep selected';
+      if (!_isDisposed) notifyListeners();
+      return;
+    }
 
     try {
       await _repository.addDiscussion(
@@ -130,13 +132,14 @@ class BleepDetailProvider extends ChangeNotifier {
         userId: userId,
         content: content,
       );
-      await _loadDiscussions(_currentBleepId!);
+
       if (_bleepDetail != null) {
         _bleepDetail = _bleepDetail!.copyWith(
           discussesCount: _bleepDetail!.discussesCount + 1,
         );
-        if (!_isDisposed) notifyListeners();
       }
+
+      await _loadDiscussions(_currentBleepId!);
     } catch (e) {
       _error = e.toString();
       if (!_isDisposed) notifyListeners();

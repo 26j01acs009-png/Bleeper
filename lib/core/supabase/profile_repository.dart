@@ -6,6 +6,19 @@ class ProfileRepository {
 
   ProfileRepository(this._client);
 
+  Future<bool> emailExists(String email) async {
+    try {
+      final response = await _client
+          .from('profiles')
+          .select()
+          .eq('email', email)
+          .maybeSingle();
+      return response != null;
+    } catch (e) {
+      throw AppError.fromAuthException(e);
+    }
+  }
+
   Future<Map<String, dynamic>> createProfile({
     required String userId,
     required String email,

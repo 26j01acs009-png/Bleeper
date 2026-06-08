@@ -25,6 +25,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   void initState() {
     super.initState();
     _startResendCooldown();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final pendingEmail = context.read<AuthProvider>().pendingEmail;
+        if (pendingEmail == null || pendingEmail.isEmpty) {
+          context.go('/login');
+        }
+      }
+    });
   }
 
   @override

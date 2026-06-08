@@ -12,11 +12,30 @@ class BleepDetailRepository {
 
       final response = await _supabase
           .from('bleeps')
-          .select('*, profiles(username, display_name, avatar_url)')
+          .select()
           .eq('id', bleepId)
           .single();
 
       final data = Map<String, dynamic>.from(response);
+
+      if (data['user_id'] != null) {
+        final profileResponse = await _supabase
+            .from('profiles')
+            .select('username, display_name, avatar_url')
+            .eq('id', data['user_id'] as String)
+            .maybeSingle();
+
+        if (profileResponse != null) {
+          data['profiles'] = profileResponse;
+        }
+      }
+
+      final stats = data['bleep_stats'] as Map<String, dynamic>?;
+
+      data['appreciates_count'] = stats?['appreciates_count'] as int? ?? 0;
+      data['discusses_count'] = stats?['discusses_count'] as int? ?? 0;
+      data['reshares_count'] = stats?['reshares_count'] as int? ?? 0;
+      data['views_count'] = stats?['views_count'] as int? ?? data['view_count'] as int? ?? 0;
 
       if (userId != null) {
         final appreciation = await _supabase
@@ -49,9 +68,11 @@ class BleepDetailRepository {
 
   Future<void> incrementViews(String bleepId) async {
     try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
       await _supabase.rpc(
         'increment_bleep_views',
-        params: {'bleep_id': bleepId},
+        params: {'p_bleep_id': bleepId, 'p_user_id': userId},
       );
     } catch (e) {
       // Non-critical, fail silently
@@ -86,7 +107,7 @@ class BleepDetailRepository {
     }
   }
 
-  Future<void> toggleReshare(String userId, String bleepId) async {
+  Future<bool> toggleReshare(String userId, String bleepId) async {
     try {
       final existing = await _supabase
           .from('reshares')
@@ -101,11 +122,13 @@ class BleepDetailRepository {
             .delete()
             .eq('user_id', userId)
             .eq('bleep_id', bleepId);
+        return false;
       } else {
         await _supabase.from('reshares').insert({
           'user_id': userId,
           'bleep_id': bleepId,
         });
+        return true;
       }
     } catch (e) {
       throw AppError('Failed to update reshare: $e');
@@ -123,7 +146,7 @@ class BleepDetailRepository {
         'bleep_id': bleepId,
         'user_id': userId,
         'content': content,
-        'parent_id': ?parentId,
+        'parent_id': parentId,
       });
     } catch (e) {
       throw AppError('Failed to add discussion: $e');
@@ -136,7 +159,7 @@ class BleepDetailRepository {
           .from('discussions')
           .select('*, profiles(username, display_name, avatar_url)')
           .eq('bleep_id', bleepId)
-          .isFilter('parent_id', null)
+          .filter('parent_id', 'is', null)
           .order('created_at', ascending: true);
 
       return response;

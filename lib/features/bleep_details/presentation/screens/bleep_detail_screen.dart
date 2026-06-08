@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:hugeicons/styles/stroke_rounded.dart';
 import 'package:provider/provider.dart';
-import '../../../../shared/widgets/bleeper_loading_indicator.dart';
 import '../../../../core/theme/app_theme_data.dart';
 import '../../../../core/supabase/auth_provider.dart';
 import '../../../../features/bleep_details/data/bleep_detail_provider.dart';
@@ -52,7 +51,10 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
     _discussionController.clear();
     FocusScope.of(context).unfocus();
 
-    await context.read<BleepDetailProvider>().addDiscussion(userId, content);
+    await context.read<BleepDetailProvider>().addDiscussion(
+      userId: userId,
+      content: content,
+    );
   }
 
   @override
@@ -85,7 +87,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
             }
 
             final bleep = provider.bleepDetail!;
-            final authorName = bleep.name ?? bleep.username;
+            final authorName = bleep.displayName ?? bleep.username;
             final authorUsername = bleep.username;
             final authorAvatarUrl = bleep.avatarUrl;
 
@@ -171,7 +173,7 @@ class _BleepDetailScreenState extends State<BleepDetailScreen> {
                         SizedBox(height: context.spacingMd),
                         BleepContent(
                           content: bleep.content,
-                          mediaUrl: bleep.imageUrl,
+                          mediaUrl: bleep.mediaUrl,
                         ),
                         SizedBox(height: context.spacingLg),
                         BleepActions(

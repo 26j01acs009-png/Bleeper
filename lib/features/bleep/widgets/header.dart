@@ -88,7 +88,7 @@ class BleepCardHeader extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                     children: [
-                      TextSpan(text: '${bleep.name} '),
+                      TextSpan(text: '${bleep.displayName ?? bleep.username} '),
                       TextSpan(
                         text: '@${bleep.username}',
                         style: context.bodyMedium.copyWith(

@@ -168,7 +168,7 @@ class _CreateBleepScreenState extends State<CreateBleepScreen> {
 
       final repository = BleepRepository(Supabase.instance.client);
       await repository.createBleep(
-        authorId: currentUser.id,
+        userId: currentUser.id,
         content: _controller.text.trim(),
         mediaUrl: imageUrl,
         visibility: _visibility?.toLowerCase() ?? 'public',

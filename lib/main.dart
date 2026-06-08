@@ -15,6 +15,7 @@ import 'package:bleeper/features/home/data/bleep_repository.dart';
 import 'package:bleeper/features/home/data/bleep_provider.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_repository.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_provider.dart';
+import 'package:bleeper/features/profile/data/profile_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,7 +93,7 @@ class _BleeperAppState extends State<BleeperApp> {
   void initState() {
     super.initState();
     // Create the router once and link it to the auth provider instance
-    _router = createAppRouter(context.read<AuthProvider>());
+    _router = createAppRouter(context.read<AuthProvider>(), context.read<ProfileProvider>());
   }
 
   @override

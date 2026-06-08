@@ -17,14 +17,31 @@ class SetupUsernameScreen extends StatefulWidget {
 class _SetupUsernameScreenState extends State<SetupUsernameScreen> {
   late final TextEditingController _controller;
   bool _isLoading = false;
+  static const _minChars = 4;
+  static const _maxChars = 32;
+  static final _regex = RegExp(r'^[a-zA-Z0-9_]+$');
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text:
-          '@${context.read<AuthProvider>().user?.email?.split('@').first ?? ''}',
+      text: context.read<AuthProvider>().user?.email?.split('@').first ?? '',
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.read<ProfileProvider>().isProfileComplete) {
+        context.go('/home');
+      }
+    });
+  }
+
+  String? _validate(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) return 'Username is required';
+    final username = raw.startsWith('@') ? raw.substring(1) : raw;
+    if (username.length < _minChars) return 'At least $_minChars characters';
+    if (username.length > _maxChars) return 'No more than $_maxChars characters';
+    if (!_regex.hasMatch(username)) return 'Only letters, numbers, and underscores';
+    return null;
   }
 
   @override
@@ -34,10 +51,9 @@ class _SetupUsernameScreenState extends State<SetupUsernameScreen> {
   }
 
   Future<void> _continue() async {
+    if (_validate(_controller.text) != null) return;
     final trimmed = _controller.text.trim();
-    if (trimmed.isEmpty) return;
     final username = trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
-    if (username.isEmpty) return;
 
     setState(() => _isLoading = true);
     try {
@@ -50,7 +66,7 @@ class _SetupUsernameScreenState extends State<SetupUsernameScreen> {
         ),
       );
       if (!mounted) return;
-      context.go('/setup/name');
+      context.go('/home');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,50 +84,44 @@ class _SetupUsernameScreenState extends State<SetupUsernameScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: context.screenPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Choose your username',
-                      style: context.h2,
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: context.spacingMd),
-                    Text(
-                      'This is how others will find you on Bleeper.',
-                      style: context.bodyMedium.copyWith(
-                        color: context.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: context.spacingXl + 12),
-                    BleeperInput(
-                      controller: _controller,
-                      hintText: 'username',
-                      prefixIcon: Icons.alternate_email,
-                      onChanged: (_) {},
-                    ),
-                  ],
-                ),
-              ),
-              if (_isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: BleeperLoadingIndicator(size: 40),
+          child: Form(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(height: MediaQuery.of(context).padding.top + 24),
+                  Text(
+                    'Choose your username',
+                    style: context.h2,
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              BleeperButton(
-                label: 'Continue',
-                isLoading: _isLoading,
-                onPressed: _isLoading ? null : _continue,
+                  SizedBox(height: context.spacingMd),
+                  Text(
+                    'This is how others will find you on Bleeper.',
+                    style: context.bodyMedium.copyWith(
+                      color: context.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: context.spacingXl + 12),
+                  BleeperInput(
+                    controller: _controller,
+                    hintText: 'username',
+                    prefixIcon: Icons.alternate_email,
+                    maxLines: 1,
+                    onChanged: (_) {},
+                    validator: _validate,
+                  ),
+                  SizedBox(height: context.spacingXxl + 8),
+                  BleeperButton(
+                    label: 'Continue',
+                    isLoading: _isLoading,
+                    onPressed: _isLoading ? null : _continue,
+                  ),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+                ],
               ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-            ],
+            ),
           ),
         ),
       ),

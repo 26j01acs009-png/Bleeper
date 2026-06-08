@@ -13,16 +13,53 @@ class BleepProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+
   String? _error;
   String? get error => _error;
 
-  Future<void> fetchBleeps() async {
+  int _offset = 0;
+  static const _pageSize = 20;
+
+  Map<String, DateTime> _lastSeenAt = {};
+  DateTime? _lastCheckedAt;
+
+  Set<String> _tabsWithNewPosts = {};
+  bool hasNewPosts(String feedType) => _tabsWithNewPosts.contains(feedType);
+
+  Future<void> fetchBleeps(String? userId, String feedType, {bool reset = true}) async {
+    if (reset) {
+      _offset = 0;
+      _hasMore = true;
+      _bleeps = [];
+    }
+
+    if (!_hasMore) return;
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _bleeps = await _repository.getBleeps();
+      final newBleeps = await _repository.getHomefeed(
+        userId ?? '',
+        feedType,
+        limit: _pageSize,
+        offset: _offset,
+      );
+
+      if (reset) {
+        _bleeps = newBleeps;
+        if (newBleeps.isNotEmpty) {
+          _lastSeenAt[feedType] = newBleeps.first.createdAt;
+        }
+      } else {
+        _bleeps = [..._bleeps, ...newBleeps];
+      }
+
+      _offset += newBleeps.length;
+      _hasMore = newBleeps.length >= _pageSize;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -31,67 +68,47 @@ class BleepProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleAppreciate(String userId, String bleepId) async {
+  void markTabSeen(String feedType) {
+    _tabsWithNewPosts.remove(feedType);
+    notifyListeners();
+  }
+
+  void markTabAsNew(String feedType) {
+    _tabsWithNewPosts.add(feedType);
+    notifyListeners();
+  }
+
+  Future<void> checkForNewPosts(String userId, String feedType) async {
     try {
-      final isActive = await _repository.toggleAppreciate(userId, bleepId);
-      _bleeps = _bleeps.map((model) {
-        if (model.id != bleepId) return model;
-        return Bleep(
-          id: model.id,
-          userId: model.userId,
-          username: model.username,
-          avatarUrl: model.avatarUrl,
-          name: model.name,
-          content: model.content,
-          mediaUrl: model.mediaUrl,
-          imageUrl: model.imageUrl,
-          appreciatesCount: model.appreciatesCount + (isActive ? 1 : -1),
-          discussesCount: model.discussesCount,
-          resharesCount: model.resharesCount,
-          viewsCount: model.viewsCount,
-          isAppreciatedByMe: isActive,
-          isResharedByMe: model.isResharedByMe,
-          createdAt: model.createdAt,
-          visibility: model.visibility,
-          replyPermission: model.replyPermission,
-        );
-      }).toList();
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      final latest = await _repository.getHomefeed(userId, feedType, limit: 1, offset: 0);
+      if (latest.isNotEmpty) {
+        final newestAt = latest.first.createdAt;
+        final lastSeen = _lastSeenAt[feedType];
+        if (lastSeen != null && newestAt.isAfter(lastSeen)) {
+          markTabAsNew(feedType);
+        }
+      }
+    } catch (_) {
+      // fail silently for background checks
     }
   }
 
+  Future<void> refreshBleeps(String? userId, String feedType) async {
+    await fetchBleeps(userId, feedType, reset: true);
+  }
+
+  Future<void> loadMore(String? userId, String feedType) async {
+    if (_isLoading || !_hasMore) return;
+    await fetchBleeps(userId, feedType, reset: false);
+  }
+
+  Future<void> toggleAppreciate(String userId, String bleepId) async {
+    await _repository.toggleAppreciate(userId, bleepId);
+    notifyListeners();
+  }
+
   Future<void> toggleReshare(String userId, String bleepId) async {
-    try {
-      final isActive = await _repository.toggleReshare(userId, bleepId);
-      _bleeps = _bleeps.map((model) {
-        if (model.id != bleepId) return model;
-        return Bleep(
-          id: model.id,
-          userId: model.userId,
-          username: model.username,
-          avatarUrl: model.avatarUrl,
-          name: model.name,
-          content: model.content,
-          imageUrl: model.imageUrl,
-          mediaUrl: model.mediaUrl,
-          appreciatesCount: model.appreciatesCount,
-          discussesCount: model.discussesCount,
-          resharesCount: model.resharesCount + (isActive ? 1 : -1),
-          viewsCount: model.viewsCount,
-          isAppreciatedByMe: model.isAppreciatedByMe,
-          isResharedByMe: isActive,
-          createdAt: model.createdAt,
-          visibility: model.visibility,
-          replyPermission: model.replyPermission,
-        );
-      }).toList();
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    await _repository.toggleReshare(userId, bleepId);
+    notifyListeners();
   }
 }

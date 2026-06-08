@@ -714,6 +714,58 @@ alter table public.messages enable row level security;
 alter publication supabase_realtime add table public.messages;
 
 -- =============================================================================
+-- USER PREFERENCES (onboarding + feed preferences)
+-- =============================================================================
+create table public.user_preferences (
+  user_id uuid references auth.users not null primary key,
+  feed_tuning jsonb default '{}',
+  content_filters jsonb default '{"nsfw": false, "sensitive": false}',
+  onboarding_completed boolean default false,
+  onboarding_step text default 'username',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table public.user_preferences enable row level security;
+
+create policy "Users can view their own preferences"
+  on public.user_preferences for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update their own preferences"
+  on public.user_preferences for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can insert their own preferences"
+  on public.user_preferences for insert
+  with check (auth.uid() = user_id);
+
+alter publication supabase_realtime add table public.user_preferences;
+
+-- =============================================================================
+-- USER BLEEP VIEWS (per-user view tracking)
+-- =============================================================================
+create table public.user_bleep_views (
+  user_id uuid references auth.users not null,
+  bleep_id uuid references public.bleeps on delete cascade not null,
+  viewed_at timestamptz default now(),
+  primary key (user_id, bleep_id)
+);
+
+alter table public.user_bleep_views enable row level security;
+
+create policy "Users can view their own view history"
+  on public.user_bleep_views for select
+  using (auth.uid() = user_id);
+
+create policy "Authenticated users can record views"
+  on public.user_bleep_views for insert
+  with check (auth.uid() = user_id and auth.role() = 'authenticated');
+
+alter publication supabase_realtime add table public.user_bleep_views;
+
+-- =============================================================================
 -- WATCH VIEWS: auto-calculated counts
 -- =============================================================================
 
@@ -722,11 +774,13 @@ select
   b.id as bleep_id,
   coalesce(count(distinct a.id), 0) as appreciates_count,
   coalesce(count(distinct r.id), 0) as reshares_count,
-  coalesce(count(distinct d.id), 0) as discussions_count
+  coalesce(count(distinct d.id), 0) as discusses_count,
+  coalesce(count(distinct v.user_id), 0) as views_count
 from public.bleeps b
 left join public.appreciations a on a.bleep_id = b.id
 left join public.reshares r on r.bleep_id = b.id
 left join public.discussions d on d.bleep_id = b.id
+left join public.user_bleep_views v on v.bleep_id = b.id
 group by b.id;
 
 -- ----------
@@ -877,15 +931,15 @@ create trigger new_user_notify_trigger
   for each row execute function notify_new_user();
 
 -- =============================================================================
--- RPC: increment bleep views
+-- RPC: record bleep view per user
 -- =============================================================================
-create or replace function increment_bleep_views(p_bleep_id uuid)
+create or replace function increment_bleep_views(p_bleep_id uuid, p_user_id uuid)
 returns void as $$
 begin
   update public.bleeps set updated_at = updated_at where id = p_bleep_id;
-  insert into public.bleep_views (bleep_id, view_count)
-  values (p_bleep_id, 1)
-  on conflict (bleep_id) do update set view_count = bleep_views.view_count + 1;
+  insert into public.user_bleep_views (bleep_id, user_id)
+  values (p_bleep_id, p_user_id)
+  on conflict (user_id, bleep_id) do nothing;
 end;
 $$ language plpgsql;
 

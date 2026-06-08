@@ -16,6 +16,8 @@ class BleeperInput extends StatelessWidget {
   final String? label;
   final int? maxLines;
   final void Function(String)? onChanged;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const BleeperInput({
     super.key,
@@ -33,6 +35,8 @@ class BleeperInput extends StatelessWidget {
     this.label,
     this.maxLines = 1,
     this.onChanged,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -54,6 +58,8 @@ TextFormField(
            validator: validator,
            enabled: enabled,
            maxLines: maxLines,
+           readOnly: readOnly,
+           onTap: onTap,
            textAlign: textAlign ?? TextAlign.start,
            style: style ?? context.body,
            onChanged: onChanged,

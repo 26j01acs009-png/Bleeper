@@ -120,12 +120,12 @@ class NotificationCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          if (preview.imageUrl != null) ...[
+          if (preview.mediaUrl != null) ...[
             SizedBox(height: context.spacingXs),
             ClipRRect(
               borderRadius: BorderRadius.circular(context.radiusXs),
               child: Image.network(
-                preview.imageUrl!,
+                preview.mediaUrl!,
                 width: double.infinity,
                 height: 80,
                 fit: BoxFit.cover,

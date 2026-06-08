@@ -3,62 +3,94 @@ class Bleep {
   final String userId;
   final String username;
   final String? avatarUrl;
-  final String? name;
-  String? get displayName => name;
+  final String? displayName;
   final String content;
-  final String? imageUrl;
+  final String? mediaUrl;
+  final String? circleId;
+  final String? circleName;
+  final String? circleSlug;
+  final String visibility;
+  final String replyPermission;
+  final String resharePermission;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
   final int appreciatesCount;
   final int discussesCount;
   final int resharesCount;
   final int viewsCount;
   final bool isAppreciatedByMe;
   final bool isResharedByMe;
-  final DateTime createdAt;
-  final String? visibility;
-  final String? replyPermission;
-  final String? mediaUrl;
 
   Bleep({
     required this.id,
     required this.userId,
     required this.username,
     this.avatarUrl,
-    this.name,
+    this.displayName,
     required this.content,
-    this.imageUrl,
+    this.mediaUrl,
+    this.circleId,
+    this.circleName,
+    this.circleSlug,
+    this.visibility = 'public',
+    this.replyPermission = 'everyone',
+    this.resharePermission = 'everyone',
+    required this.createdAt,
+    this.updatedAt,
     this.appreciatesCount = 0,
     this.discussesCount = 0,
     this.resharesCount = 0,
     this.viewsCount = 0,
     this.isAppreciatedByMe = false,
     this.isResharedByMe = false,
-    required this.createdAt,
-    this.visibility,
-    this.replyPermission,
-    this.mediaUrl,
   });
 
   factory Bleep.fromJson(Map<String, dynamic> json) {
     final profiles = json['profiles'] as Map<String, dynamic>?;
+    final stats = json['bleep_stats'] as Map<String, dynamic>?;
+
     return Bleep(
       id: json['id'] as String? ?? '',
       userId: json['user_id'] as String? ?? '',
-      username: profiles?['username'] as String? ?? json['username'] as String? ?? 'anonymous',
-      avatarUrl: profiles?['avatar_url'] as String? ?? json['avatar_url'] as String?,
-      name: profiles?['display_name'] as String? ?? json['name'] as String?,
+      username: profiles?['username'] as String? ??
+          json['author_username'] as String? ??
+          json['username'] as String? ??
+          'anonymous',
+      avatarUrl: profiles?['avatar_url'] as String? ??
+          json['author_avatar_url'] as String? ??
+          json['avatar_url'] as String?,
+      displayName: profiles?['display_name'] as String? ??
+          json['author_display_name'] as String? ??
+          json['display_name'] as String?,
       content: json['content'] as String? ?? '',
-      imageUrl: json['media_url'] as String?,
-      mediaUrl: json['media_url'] as String?,
-      appreciatesCount: json['appreciates_count'] as int? ?? 0,
-      discussesCount: json['discussions_count'] as int? ?? 0,
-      resharesCount: json['reshares_count'] as int? ?? 0,
-      viewsCount: json['views_count'] as int? ?? 0,
+      mediaUrl: json['media_url'] as String? ?? json['image_url'] as String?,
+      circleId: json['circle_id'] as String?,
+      circleName: json['circle_name'] as String?,
+      circleSlug: json['circle_slug'] as String?,
+      visibility: json['visibility'] as String? ?? 'public',
+      replyPermission: json['reply_permission'] as String? ?? 'everyone',
+      resharePermission: json['reshare_permission'] as String? ?? 'everyone',
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      appreciatesCount: stats?['appreciates_count'] as int? ?? json['appreciates_count'] as int? ?? 0,
+      discussesCount: stats?['discusses_count'] as int? ?? json['discusses_count'] as int? ?? 0,
+      resharesCount: stats?['reshares_count'] as int? ?? json['reshares_count'] as int? ?? 0,
+      viewsCount: stats?['views_count'] as int? ?? json['views_count'] as int? ?? 0,
       isAppreciatedByMe: json['is_appreciated_by_me'] as bool? ?? false,
       isResharedByMe: json['is_reshared_by_me'] as bool? ?? false,
-      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : DateTime.now(),
-      visibility: json['visibility'] as String?,
-      replyPermission: json['reply_permission'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'user_id': userId,
+      'content': content,
+      'media_url': mediaUrl,
+      'circle_id': circleId,
+      'visibility': visibility,
+      'reply_permission': replyPermission,
+      'reshare_permission': resharePermission,
+    };
   }
 
   Bleep copyWith({
@@ -66,38 +98,46 @@ class Bleep {
     String? userId,
     String? username,
     String? avatarUrl,
-    String? name,
+    String? displayName,
     String? content,
-    String? imageUrl,
     String? mediaUrl,
+    String? circleId,
+    String? circleName,
+    String? circleSlug,
+    String? visibility,
+    String? replyPermission,
+    String? resharePermission,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     int? appreciatesCount,
     int? discussesCount,
     int? resharesCount,
     int? viewsCount,
     bool? isAppreciatedByMe,
     bool? isResharedByMe,
-    DateTime? createdAt,
-    String? visibility,
-    String? replyPermission,
   }) {
     return Bleep(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       username: username ?? this.username,
       avatarUrl: avatarUrl ?? this.avatarUrl,
-      name: name ?? this.name,
+      displayName: displayName ?? this.displayName,
       content: content ?? this.content,
-      imageUrl: imageUrl ?? this.imageUrl,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      circleId: circleId ?? this.circleId,
+      circleName: circleName ?? this.circleName,
+      circleSlug: circleSlug ?? this.circleSlug,
+      visibility: visibility ?? this.visibility,
+      replyPermission: replyPermission ?? this.replyPermission,
+      resharePermission: resharePermission ?? this.resharePermission,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       appreciatesCount: appreciatesCount ?? this.appreciatesCount,
       discussesCount: discussesCount ?? this.discussesCount,
       resharesCount: resharesCount ?? this.resharesCount,
       viewsCount: viewsCount ?? this.viewsCount,
       isAppreciatedByMe: isAppreciatedByMe ?? this.isAppreciatedByMe,
       isResharedByMe: isResharedByMe ?? this.isResharedByMe,
-      createdAt: createdAt ?? this.createdAt,
-      visibility: visibility ?? this.visibility,
-      replyPermission: replyPermission ?? this.replyPermission,
     );
   }
 }

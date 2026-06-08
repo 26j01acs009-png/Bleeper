@@ -7,44 +7,19 @@ class BleepRepository {
 
   BleepRepository(this._supabase);
 
-  Future<List<Bleep>> getBleeps() async {
+  Future<List<Bleep>> getHomefeed(String userId, String feedType, {int limit = 20, int offset = 0}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-
-      final response = await _supabase
-          .from('bleeps')
-          .select('*, profiles(username, avatar_url, display_name)')
-          .order('created_at', ascending: false);
-
+      print('[BleepRepository] getHomefeed RPC userId=$userId feedType=$feedType limit=$limit offset=$offset');
+      final response = await _supabase.rpc(
+        'get_homefeed',
+        params: {'auth_user_id': userId, 'p_feed_type': feedType, 'p_limit': limit, 'p_offset': offset},
+      );
       final data = response as List<dynamic>;
-      var bleeps = data.map((json) => Bleep.fromJson(json)).toList();
-
-      if (userId != null) {
-        final appreciations = await _supabase
-            .from('appreciations')
-            .select('bleep_id')
-            .eq('user_id', userId);
-
-        final appreciatedIds = appreciations.map((a) => a['bleep_id'] as String).toSet();
-
-        final reshares = await _supabase
-            .from('reshares')
-            .select('bleep_id')
-            .eq('user_id', userId);
-
-        final resharedIds = reshares.map((r) => r['bleep_id'] as String).toSet();
-
-        bleeps = bleeps.map((bleep) {
-          return bleep.copyWith(
-            isAppreciatedByMe: appreciatedIds.contains(bleep.id),
-            isResharedByMe: resharedIds.contains(bleep.id),
-          );
-        }).toList();
-      }
-
-      return bleeps;
+      print('[BleepRepository] getHomefeed success rows=${data.length}');
+      return data.map((json) => Bleep.fromJson(json)).toList();
     } catch (e) {
-      throw AppError('Failed to fetch bleeps: $e');
+      print('[BleepRepository] getHomefeed error=$e');
+      throw AppError('Failed to fetch homefeed: $e');
     }
   }
 
@@ -103,23 +78,24 @@ class BleepRepository {
   }
 
   Future<void> createBleep({
-    required String authorId,
+    required String userId,
     required String content,
     String? mediaUrl,
+    String? circleId,
     String visibility = 'public',
     String replyPermission = 'everyone',
+    String resharePermission = 'everyone',
   }) async {
     try {
-      await _supabase
-          .from('bleeps')
-          .insert({
-            'author_id': authorId,
-            'content': content,
-            'media_url': mediaUrl,
-            'visibility': visibility,
-            'reply_permission': replyPermission,
-            'reshare_permission': 'everyone',
-          });
+      await _supabase.from('bleeps').insert({
+        'user_id': userId,
+        'content': content,
+        'media_url': mediaUrl,
+        'circle_id': circleId,
+        'visibility': visibility,
+        'reply_permission': replyPermission,
+        'reshare_permission': resharePermission,
+      });
     } catch (e) {
       throw AppError('Failed to create bleep: $e');
     }

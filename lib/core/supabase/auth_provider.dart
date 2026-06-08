@@ -64,12 +64,13 @@ class AuthProvider extends ChangeNotifier implements Listenable {
     _errorMessage = null;
 
     try {
+      final exists = await profileRepository.emailExists(email);
+      if (exists) {
+        _errorMessage = 'Email already registered. Please login or use a different email.';
+        return;
+      }
       await _authRepository.signUp(email: email, password: password);
       _pendingEmail = email;
-      await profileRepository.createProfile(
-        userId: _authRepository.currentUser!.id,
-        email: email,
-      );
     } catch (e) {
       if (e is AppError) {
         _errorMessage = e.message;
@@ -94,6 +95,14 @@ class AuthProvider extends ChangeNotifier implements Listenable {
         token: token,
         type: 'emailSignup',
       );
+
+      final userId = _authRepository.currentUser?.id;
+      if (userId != null) {
+        await profileRepository.createProfile(
+          userId: userId,
+          email: email,
+        );
+      }
 
       _pendingEmail = null;
     } catch (e) {

@@ -15,7 +15,6 @@ class SetupGenderDobScreen extends StatefulWidget {
 }
 
 class _SetupGenderDobScreenState extends State<SetupGenderDobScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _dobController = TextEditingController();
   String? _selectedGender;
   bool _isLoading = false;
@@ -38,6 +37,11 @@ class _SetupGenderDobScreenState extends State<SetupGenderDobScreen> {
           .first;
     }
     _selectedGender = profile?.gender;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.read<ProfileProvider>().isProfileComplete) {
+        context.go('/home');
+      }
+    });
   }
 
   @override
@@ -47,7 +51,24 @@ class _SetupGenderDobScreenState extends State<SetupGenderDobScreen> {
   }
 
   Future<void> _continue() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final dob = DateTime.tryParse(_dobController.text.trim());
+    if (dob != null) {
+      final now = DateTime.now();
+      final age =
+          now.year -
+          dob.year -
+          (now.month < dob.month ||
+                  (now.month == dob.month && now.day < dob.day)
+              ? 1
+              : 0);
+      if (age < 13) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be at least 13 years old.')),
+        );
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -72,7 +93,7 @@ class _SetupGenderDobScreenState extends State<SetupGenderDobScreen> {
       );
       await context.read<ProfileProvider>().updateProfile(updated);
       if (!mounted) return;
-      context.go('/home');
+      context.go('/setup/name');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,77 +104,89 @@ class _SetupGenderDobScreenState extends State<SetupGenderDobScreen> {
     }
   }
 
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final initial = DateTime.tryParse(_dobController.text.trim()) ?? DateTime(now.year - 18);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(DateTime(1900)) ? initial : DateTime(now.year - 18),
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (picked != null) {
+      _dobController.text = picked.toIso8601String().split('T').first;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bg,
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: EdgeInsets.symmetric(horizontal: context.screenPadding),
-            children: [
-              SizedBox(height: MediaQuery.of(context).padding.top + 24),
-              Text(
-                'Tell us about yourself',
-                style: context.h2,
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: context.spacingXl + 12),
-              BleeperInput(
-                controller: _dobController,
-                hintText: 'YYYY-MM-DD',
-                label: 'Date of birth',
-                prefixIcon: Icons.cake_outlined,
-                keyboardType: TextInputType.datetime,
-                validator: (value) {
-                  if (value == null || value.isEmpty) return null; // optional
-                  final date = DateTime.tryParse(value);
-                  if (date == null) return 'Enter a valid date';
-                  if (date.isAfter(DateTime.now()))
-                    return 'Date cannot be in the future';
-                  return null;
-                },
-              ),
-              SizedBox(height: context.spacingMd),
-              Text('Gender', style: context.label),
-              SizedBox(height: context.spacingSm),
-              Wrap(
-                spacing: context.spacingSm,
-                runSpacing: context.spacingSm,
-                children: _genders
-                    .map(
-                      (gender) => ChoiceChip(
-                        label: Text(gender),
-                        selected: _selectedGender == gender,
-                        onSelected: (selected) {
-                          setState(
-                            () => _selectedGender = selected ? gender : null,
-                          );
-                        },
-                        selectedColor: context.accent.withValues(alpha: 0.2),
-                        checkmarkColor: context.accent,
-                        backgroundColor: context.surfaceAlt,
-                        labelStyle: context.bodySmall,
-                      ),
-                    )
-                    .toList(),
-              ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 24),
-              if (_isLoading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: BleeperLoadingIndicator(size: 40),
-                  ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: context.screenPadding),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: MediaQuery.of(context).padding.top + 24),
+                Text(
+                  'Tell us about yourself',
+                  style: context.h2,
+                  textAlign: TextAlign.center,
                 ),
-              BleeperButton(
-                label: 'Continue',
-                isLoading: _isLoading,
-                onPressed: _isLoading ? null : _continue,
-              ),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-            ],
+                SizedBox(height: context.spacingXl + 12),
+                  BleeperInput(
+                    controller: _dobController,
+                    hintText: 'YYYY-MM-DD',
+                    label: 'Date of birth',
+                    prefixIcon: Icons.cake_outlined,
+                    keyboardType: TextInputType.datetime,
+                    readOnly: true,
+                    onTap: _pickDate,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) return null;
+                      final date = DateTime.tryParse(value);
+                      if (date == null) return 'Enter a valid date';
+                      if (date.isAfter(DateTime.now())) {
+                        return 'Date cannot be in the future';
+                      }
+                      return null;
+                    },
+                  ),
+                SizedBox(height: context.spacingMd),
+                Text('Gender', style: context.label),
+                SizedBox(height: context.spacingSm),
+                Wrap(
+                  spacing: context.spacingSm,
+                  runSpacing: context.spacingSm,
+                  children: _genders
+                      .map(
+                        (gender) => ChoiceChip(
+                          label: Text(gender),
+                          selected: _selectedGender == gender,
+                          onSelected: (selected) {
+                            setState(
+                              () => _selectedGender = selected ? gender : null,
+                            );
+                          },
+                          selectedColor: context.accent.withValues(alpha: 0.2),
+                          checkmarkColor: context.accent,
+                          backgroundColor: context.surfaceAlt,
+                          labelStyle: context.bodySmall,
+                        ),
+                      )
+                      .toList(),
+                ),
+                SizedBox(height: context.spacingXxl + 8),
+                BleeperButton(
+                  label: 'Continue',
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : _continue,
+                ),
+                SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+              ],
+            ),
           ),
         ),
       ),

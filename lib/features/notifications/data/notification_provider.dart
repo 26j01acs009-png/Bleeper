@@ -54,6 +54,7 @@ class NotificationProvider extends ChangeNotifier {
   static NotificationModel _markAsRead(NotificationModel n) {
     return NotificationModel(
       id: n.id,
+      recipientId: n.recipientId,
       actorId: n.actorId,
       actorUsername: n.actorUsername,
       actorDisplayName: n.actorDisplayName,
@@ -61,7 +62,7 @@ class NotificationProvider extends ChangeNotifier {
       type: n.type,
       bleepId: n.bleepId,
       bleepContent: n.bleepContent,
-      bleepImageUrl: n.bleepImageUrl,
+      bleepMediaUrl: n.bleepMediaUrl,
       isRead: true,
       createdAt: n.createdAt,
     );

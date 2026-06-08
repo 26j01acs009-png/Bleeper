@@ -58,7 +58,7 @@ class ExploreScreen extends StatelessWidget {
                       id: 'trending_$index',
                       userId: 'user_$index',
                       username: 'trending_user_$index',
-                      name: 'Trending User $index',
+                      displayName: 'Trending User $index',
                       content: 'This is trending Bleep #${index + 1} discovered through Explore.',
                       appreciatesCount: (index + 1) * 15,
                       discussesCount: (index + 1) * 5,
