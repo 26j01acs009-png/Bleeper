@@ -15,6 +15,8 @@ import 'package:bleeper/features/home/data/bleep_repository.dart';
 import 'package:bleeper/features/home/data/bleep_provider.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_repository.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_provider.dart';
+import 'package:bleeper/features/explore/data/explore_repository.dart';
+import 'package:bleeper/features/explore/data/explore_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,23 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (context) =>
               BleepDetailProvider(context.read<BleepDetailRepository>()),
+        ),
+        Provider(create: (_) => ExploreRepository(Supabase.instance.client)),
+        ChangeNotifierProxyProvider<AuthProvider, ExploreProvider>(
+          create: (context) =>
+              ExploreProvider(context.read<ExploreRepository>()),
+          update: (context, authProvider, ExploreProvider? exploreProvider) {
+            final provider =
+                exploreProvider ??
+                ExploreProvider(context.read<ExploreRepository>());
+            if (authProvider.status == AuthStatus.authenticated &&
+                authProvider.user != null) {
+              if (!provider.hasLoadedOnce && !provider.isLoading) {
+                provider.loadExploreData(authProvider.user!.id);
+              }
+            }
+            return provider;
+          },
         ),
         ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
           create: (context) =>

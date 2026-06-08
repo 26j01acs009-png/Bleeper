@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_theme_data.dart';
 
 class CommunityCard extends StatelessWidget {
-  const CommunityCard({required this.index, super.key});
+  const CommunityCard({required this.data, super.key});
 
-  final int index;
+  final Map<String, dynamic> data;
 
   @override
   Widget build(BuildContext context) {
+    final name = data['name'] ?? 'Community';
+    final description = data['description'] ?? '';
+    final memberCount = data['member_count'] ?? 0;
+    final avatarUrl = data['avatar_url'] as String?;
+
     return Container(
       width: double.infinity,
       margin: EdgeInsets.only(bottom: context.spacingSm),
@@ -23,19 +29,24 @@ class CommunityCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: context.accent.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.group, size: 20, color: context.accent),
-                ),
+                avatarUrl != null
+                    ? CircleAvatar(
+                        radius: 20,
+                        backgroundImage: CachedNetworkImageProvider(avatarUrl),
+                      )
+                    : Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: context.accent.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.group, size: 20, color: context.accent),
+                      ),
                 SizedBox(width: context.spacingSm),
                 Expanded(
                   child: Text(
-                    'Community $index',
+                    name,
                     style: context.bodyMedium.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -47,12 +58,12 @@ class CommunityCard extends StatelessWidget {
             ),
             SizedBox(height: context.spacingSm),
             Text(
-              '${(index + 1) * 124} members',
+              '$memberCount members',
               style: context.bodyMedium.copyWith(color: context.textSecondary),
             ),
             SizedBox(height: context.spacingSm),
             Text(
-              'Discuss the latest trends and share ideas with the community.',
+              description.isEmpty ? 'No description provided.' : description,
               style: context.bodyMedium.copyWith(
                 color: context.textPrimary,
                 height: 1.4,
