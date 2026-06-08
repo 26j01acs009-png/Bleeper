@@ -22,13 +22,16 @@ class BleepProvider extends ChangeNotifier {
   int _offset = 0;
   static const _pageSize = 20;
 
-  Map<String, DateTime> _lastSeenAt = {};
-  DateTime? _lastCheckedAt;
+  final Map<String, DateTime> _lastSeenAt = {};
 
-  Set<String> _tabsWithNewPosts = {};
+  final Set<String> _tabsWithNewPosts = {};
   bool hasNewPosts(String feedType) => _tabsWithNewPosts.contains(feedType);
 
-  Future<void> fetchBleeps(String? userId, String feedType, {bool reset = true}) async {
+  Future<void> fetchBleeps(
+    String? userId,
+    String feedType, {
+    bool reset = true,
+  }) async {
     if (reset) {
       _offset = 0;
       _hasMore = true;
@@ -80,7 +83,12 @@ class BleepProvider extends ChangeNotifier {
 
   Future<void> checkForNewPosts(String userId, String feedType) async {
     try {
-      final latest = await _repository.getHomefeed(userId, feedType, limit: 1, offset: 0);
+      final latest = await _repository.getHomefeed(
+        userId,
+        feedType,
+        limit: 1,
+        offset: 0,
+      );
       if (latest.isNotEmpty) {
         final newestAt = latest.first.createdAt;
         final lastSeen = _lastSeenAt[feedType];

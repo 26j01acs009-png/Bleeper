@@ -102,7 +102,7 @@ class BleepCardHeader extends StatelessWidget {
               ),
               SizedBox(height: 2),
               Text(
-                '${bleep.visibility ?? 'Public'} • ${bleep.replyPermission ?? 'Anyone can reply'}',
+                '${bleep.visibility} • ${bleep.replyPermission}',
                 style: context.caption.copyWith(
                   color: context.textSecondary,
                   height: 1.2,

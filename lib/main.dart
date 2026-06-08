@@ -15,7 +15,6 @@ import 'package:bleeper/features/home/data/bleep_repository.dart';
 import 'package:bleeper/features/home/data/bleep_provider.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_repository.dart';
 import 'package:bleeper/features/bleep_details/data/bleep_detail_provider.dart';
-import 'package:bleeper/features/profile/data/profile_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,12 +28,15 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: auth),
         Provider(create: (_) => ProfileRepository(Supabase.instance.client)),
         Provider(create: (_) => BleepRepository(Supabase.instance.client)),
-        Provider(create: (_) => BleepDetailRepository(Supabase.instance.client)),
+        Provider(
+          create: (_) => BleepDetailRepository(Supabase.instance.client),
+        ),
         ChangeNotifierProvider(
           create: (context) => BleepProvider(context.read<BleepRepository>()),
         ),
         ChangeNotifierProvider(
-          create: (context) => BleepDetailProvider(context.read<BleepDetailRepository>()),
+          create: (context) =>
+              BleepDetailProvider(context.read<BleepDetailRepository>()),
         ),
         ChangeNotifierProxyProvider<AuthProvider, ProfileProvider>(
           create: (context) =>
@@ -54,24 +56,33 @@ Future<void> main() async {
             return provider;
           },
         ),
-        Provider(create: (_) => NotificationRepository(Supabase.instance.client)),
+        Provider(
+          create: (_) => NotificationRepository(Supabase.instance.client),
+        ),
         ChangeNotifierProxyProvider<AuthProvider, NotificationProvider>(
           create: (context) =>
               NotificationProvider(context.read<NotificationRepository>()),
-          update: (context, authProvider, NotificationProvider? notificationProvider) {
-            final provider =
-                notificationProvider ??
-                NotificationProvider(context.read<NotificationRepository>());
-            if (authProvider.status == AuthStatus.authenticated &&
-                authProvider.user != null) {
-              if (provider.notifications.isEmpty && !provider.isLoading) {
-                provider.fetchNotifications(authProvider.user!.id);
-              }
-            } else if (authProvider.status == AuthStatus.unauthenticated) {
-              // Clear notifications on logout if needed
-            }
-            return provider;
-          },
+          update:
+              (
+                context,
+                authProvider,
+                NotificationProvider? notificationProvider,
+              ) {
+                final provider =
+                    notificationProvider ??
+                    NotificationProvider(
+                      context.read<NotificationRepository>(),
+                    );
+                if (authProvider.status == AuthStatus.authenticated &&
+                    authProvider.user != null) {
+                  if (provider.notifications.isEmpty && !provider.isLoading) {
+                    provider.fetchNotifications(authProvider.user!.id);
+                  }
+                } else if (authProvider.status == AuthStatus.unauthenticated) {
+                  // Clear notifications on logout if needed
+                }
+                return provider;
+              },
         ),
       ],
       child: const BleeperApp(),
@@ -93,7 +104,10 @@ class _BleeperAppState extends State<BleeperApp> {
   void initState() {
     super.initState();
     // Create the router once and link it to the auth provider instance
-    _router = createAppRouter(context.read<AuthProvider>(), context.read<ProfileProvider>());
+    _router = createAppRouter(
+      context.read<AuthProvider>(),
+      context.read<ProfileProvider>(),
+    );
   }
 
   @override
